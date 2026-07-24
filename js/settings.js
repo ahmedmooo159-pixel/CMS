@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       try {
         await window.auth.signOut();
-        window.location.href = "login.html";
+        window.location.href = `${window.BASE_PATH || ''}/admin/login.html`;
       } catch (err) {
         console.error("Sign out error:", err);
       }

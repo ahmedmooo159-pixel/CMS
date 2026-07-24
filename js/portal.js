@@ -71,8 +71,10 @@ async function loadPortalData() {
       return;
     }
 
+    const pagePrefix = window.location.pathname.includes('/public/') ? '' : 'public/';
+
     grid.innerHTML = specialties.map(s => `
-      <a href="doctors-list.html?specialtyId=${encodeURIComponent(s.id)}&specialtyName=${encodeURIComponent(s.name)}"
+      <a href="${pagePrefix}doctors-list.html?specialtyId=${encodeURIComponent(s.id)}&specialtyName=${encodeURIComponent(s.name)}"
          class="specialty-card">
         <div class="specialty-card-icon">
           ${s.icon ? `<img src="${s.icon}" alt="${s.name}">` : `<i class="fa-solid fa-stethoscope"></i>`}

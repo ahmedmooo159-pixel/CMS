@@ -31,7 +31,7 @@ function bindGlobalEvents() {
   // Logout
   document.getElementById('logout-btn').addEventListener('click', async (e) => {
     e.preventDefault();
-    try { await window.auth.signOut(); window.location.href = 'login.html'; } catch (err) { console.error(err); }
+    try { await window.auth.signOut(); window.location.href = `${window.BASE_PATH || ''}/admin/login.html`; } catch (err) { console.error(err); }
   });
 
   // Open Add modal

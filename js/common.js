@@ -85,11 +85,15 @@ function setupMockFirebase() {
   };
 }
 
+// Base Path helper for GitHub Pages compatibility
+const BASE_PATH = window.location.hostname.includes("github.io") ? "/CMS" : "";
+window.BASE_PATH = BASE_PATH;
+
 // Utility to check if user is admin
 function requireAdmin() {
   auth.onAuthStateChanged((user) => {
     if (!user) {
-      window.location.href = "/admin/login.html";
+      window.location.href = `${BASE_PATH}/admin/login.html`;
     }
   });
 }

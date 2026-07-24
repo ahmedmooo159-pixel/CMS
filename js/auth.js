@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("Logged in successfully:", userCredential.user);
         
         // Redirect to admin index
-        window.location.href = "index.html";
+        window.location.href = `${window.BASE_PATH || ''}/admin/index.html`;
       } catch (error) {
         console.error("Login failed:", error);
         errorMessage.textContent = "فشل تسجيل الدخول: يرجى التحقق من صحة البريد الإلكتروني وكلمة المرور.";
