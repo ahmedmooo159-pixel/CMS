@@ -76,41 +76,6 @@
   <!-- Shared code and Firebase -->
   <script src="js/common.js"></script>
   <script src="js/theme.js"></script>
-  
-  <script>
-    // In Sprint 1, we just verify the initial rendering and mock connection
-    document.addEventListener("DOMContentLoaded", () => {
-      // Mock loading state completion if Firebase config is not fully set up yet
-      setTimeout(() => {
-        const grid = document.getElementById("specialties-grid");
-        grid.innerHTML = `
-          <div class="card flex flex-col align-center" style="text-align: center; cursor: pointer;">
-            <div class="widget-icon" style="margin-bottom: 1rem; width: 64px; height: 64px; font-size: 1.75rem;">
-              <i class="fa-solid fa-tooth"></i>
-            </div>
-            <h4 style="font-size: 1.2rem; margin-bottom: 0.5rem;">طب الأسنان</h4>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">رعاية متكاملة للفم والأسنان وتجميل وزراعة الأسنان.</p>
-            <span style="font-weight: 600; color: var(--secondary-color);">السعر الأساسي: 200 ج.م</span>
-          </div>
-          <div class="card flex flex-col align-center" style="text-align: center; cursor: pointer;">
-            <div class="widget-icon" style="margin-bottom: 1rem; width: 64px; height: 64px; font-size: 1.75rem;">
-              <i class="fa-solid fa-stethoscope"></i>
-            </div>
-            <h4 style="font-size: 1.2rem; margin-bottom: 0.5rem;">الباطنة العامة</h4>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">تشخيص وعلاج الأمراض الباطنية ومتابعة الحالات المزمنة.</p>
-            <span style="font-weight: 600; color: var(--secondary-color);">السعر الأساسي: 150 ج.م</span>
-          </div>
-          <div class="card flex flex-col align-center" style="text-align: center; cursor: pointer;">
-            <div class="widget-icon" style="margin-bottom: 1rem; width: 64px; height: 64px; font-size: 1.75rem;">
-              <i class="fa-solid fa-baby"></i>
-            </div>
-            <h4 style="font-size: 1.2rem; margin-bottom: 0.5rem;">طب الأطفال</h4>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">متابعة نمو وصحة الأطفال وحديثي الولادة والتطعيمات.</p>
-            <span style="font-weight: 600; color: var(--secondary-color);">السعر الأساسي: 180 ج.م</span>
-          </div>
-        `;
-      }, 1000);
-    });
-  </script>
+  <script src="js/portal.js"></script>
 </body>
 </html>
