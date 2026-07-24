@@ -1,0 +1,1067 @@
+{
+  "projectName": "Clinic Management System",
+  "projectVersion": "1.0.0",
+  "projectDescription": "A comprehensive clinic management system with admin panel, patient portal, and reception dashboard. Fully customizable with clinic-specific branding, dynamic data management, and real-time notifications.",
+  "createdBy": "Ahmed",
+  "createdDate": "2026-07-24",
+  
+  "projectScope": {
+    "overview": "Multi-doctor, multi-specialty clinic management platform",
+    "deployment": "Web app (responsive for desktop + mobile browsers)",
+    "customization": "All clinic data (name, logo, colors, specialties, doctors) configurable via admin settings",
+    "dataSource": "Only real data entered by admin - zero dummy/hardcoded data"
+  },
+
+  "techStack": {
+    "frontend": {
+      "framework": "Vanilla JavaScript (No frameworks)",
+      "language": "Plain HTML5 + CSS3 + JavaScript ES6+",
+      "styling": "Custom CSS (responsive grid + flexbox)",
+      "stateManagement": "Plain JavaScript objects + localStorage",
+      "apiCalls": "Fetch API for HTTP requests",
+      "templating": "Template literals (backticks) + DOM manipulation",
+      "bundler": "Optional: Vite (for local development) OR plain static files",
+      "responsiveness": "Mobile-first CSS media queries"
+    },
+    "backend": {
+      "runtime": "Node.js + Express",
+      "database": "Firebase Firestore (primary) + PostgreSQL (optional for complex queries)",
+      "hosting": "Vercel for serverless functions / Railway for full backend",
+      "authentication": "Firebase Auth"
+    },
+    "realtime": {
+      "notifications": "Firebase Cloud Messaging (FCM) + In-app notifications",
+      "messaging": "Firebase Realtime Database for live updates",
+      "optional": "Twilio for optional SMS"
+    },
+    "payments": {
+      "primary": "Paymob",
+      "currency": "Egyptian Pound (EGP)"
+    }
+  },
+
+  "databaseSchema": {
+    "tables": {
+      "clinics": {
+        "description": "Clinic master data",
+        "fields": {
+          "id": "string (UUID, primary key)",
+          "name": "string (clinic name - editable via admin)",
+          "logo": "string (URL to uploaded logo image)",
+          "description": "string (clinic description)",
+          "address": "string",
+          "phone": "string",
+          "email": "string",
+          "primaryColor": "string (hex color code for branding)",
+          "secondaryColor": "string (hex color code for branding)",
+          "workingDaysStart": "string (e.g., 'Saturday')",
+          "workingDaysEnd": "string (e.g., 'Thursday')",
+          "workingHoursStart": "string (e.g., '09:00')",
+          "workingHoursEnd": "string (e.g., '17:00')",
+          "timezone": "string (default: 'Africa/Cairo')",
+          "createdAt": "timestamp",
+          "updatedAt": "timestamp"
+        }
+      },
+
+      "specialties": {
+        "description": "Medical specialties offered by clinic",
+        "fields": {
+          "id": "string (UUID, primary key)",
+          "clinicId": "string (foreign key → clinics)",
+          "name": "string (e.g., 'أسنان', 'باطنة', 'أطفال')",
+          "description": "string (optional)",
+          "basePrice": "number (default price for this specialty)",
+          "icon": "string (URL to specialty icon)",
+          "displayOrder": "number (for sorting in UI)",
+          "isActive": "boolean",
+          "createdAt": "timestamp",
+          "updatedAt": "timestamp"
+        }
+      },
+
+      "doctors": {
+        "description": "Doctors/practitioners",
+        "fields": {
+          "id": "string (UUID, primary key)",
+          "clinicId": "string (foreign key → clinics)",
+          "specialtyId": "string (foreign key → specialties)",
+          "name": "string (doctor's full name)",
+          "phone": "string",
+          "email": "string",
+          "profileImage": "string (URL to doctor's photo)",
+          "bio": "string (short biography)",
+          "qualifications": "array of strings (e.g., ['ماجستير أسنان', 'شهادة دولية'])",
+          "workingHoursStart": "string (e.g., '09:00')",
+          "workingHoursEnd": "string (e.g., '17:00')",
+          "appointmentDuration": "number (in minutes: 30, 60)",
+          "maxAppointmentsPerDay": "number",
+          "daysOff": "array of strings (e.g., ['Friday', 'Sunday'])",
+          "isActive": "boolean",
+          "createdAt": "timestamp",
+          "updatedAt": "timestamp"
+        }
+      },
+
+      "availableSlots": {
+        "description": "Available appointment time slots",
+        "fields": {
+          "id": "string (UUID, primary key)",
+          "clinicId": "string (foreign key → clinics)",
+          "doctorId": "string (foreign key → doctors)",
+          "date": "string (YYYY-MM-DD format)",
+          "startTime": "string (HH:mm format, e.g., '09:00')",
+          "endTime": "string (HH:mm format, e.g., '09:30')",
+          "isBooked": "boolean (default: false)",
+          "createdAt": "timestamp",
+          "updatedAt": "timestamp"
+        },
+        "note": "Generated automatically based on doctor's working hours and appointment duration"
+      },
+
+      "appointments": {
+        "description": "Patient appointment bookings",
+        "fields": {
+          "id": "string (UUID, primary key)",
+          "clinicId": "string (foreign key → clinics)",
+          "patientId": "string (foreign key → patients)",
+          "doctorId": "string (foreign key → doctors)",
+          "specialtyId": "string (foreign key → specialties)",
+          "appointmentDate": "string (YYYY-MM-DD)",
+          "appointmentTime": "string (HH:mm)",
+          "slotId": "string (foreign key → availableSlots)",
+          "status": "enum ('pending', 'confirmed', 'completed', 'cancelled', 'no-show')",
+          "paymentStatus": "enum ('unpaid', 'paid', 'pending')",
+          "paymentMethod": "enum ('paymob', 'cash', 'pending')",
+          "price": "number (appointment price in EGP)",
+          "notes": "string (patient notes/concerns)",
+          "cancellationReason": "string (optional)",
+          "paymentId": "string (Paymob transaction ID)",
+          "reminderSMSSent": "boolean",
+          "receiptSent": "boolean",
+          "createdAt": "timestamp",
+          "updatedAt": "timestamp"
+        }
+      },
+
+      "patients": {
+        "description": "Patient records",
+        "fields": {
+          "id": "string (UUID, primary key)",
+          "clinicId": "string (foreign key → clinics)",
+          "firstName": "string",
+          "lastName": "string",
+          "phone": "string",
+          "email": "string",
+          "dateOfBirth": "string (YYYY-MM-DD, optional)",
+          "gender": "enum ('male', 'female', 'other', 'prefer_not_to_say')",
+          "address": "string",
+          "medicalHistory": "string (chronic diseases, allergies)",
+          "emergencyContact": "string (phone number)",
+          "preferredContactMethod": "enum ('phone', 'email', 'sms')",
+          "notes": "string (internal clinic notes)",
+          "createdAt": "timestamp",
+          "updatedAt": "timestamp"
+        }
+      },
+
+      "notifications": {
+        "description": "Notification logs",
+        "fields": {
+          "id": "string (UUID, primary key)",
+          "clinicId": "string (foreign key → clinics)",
+          "patientId": "string (foreign key → patients)",
+          "appointmentId": "string (foreign key → appointments, optional)",
+          "type": "enum ('appointment_confirmed', 'appointment_reminder', 'appointment_cancelled', 'payment_received', 'custom')",
+          "channel": "enum ('in_app', 'sms', 'email')",
+          "title": "string",
+          "message": "string",
+          "status": "enum ('sent', 'failed', 'pending')",
+          "sentAt": "timestamp",
+          "readAt": "timestamp (optional, for in-app notifications)",
+          "createdAt": "timestamp"
+        }
+      },
+
+      "payments": {
+        "description": "Payment transaction logs",
+        "fields": {
+          "id": "string (UUID, primary key)",
+          "clinicId": "string (foreign key → clinics)",
+          "appointmentId": "string (foreign key → appointments)",
+          "patientId": "string (foreign key → patients)",
+          "amount": "number (in EGP)",
+          "currency": "string (default: 'EGP')",
+          "paymentGateway": "string (default: 'paymob')",
+          "transactionId": "string (Paymob transaction ID)",
+          "status": "enum ('success', 'failed', 'pending', 'refunded')",
+          "paymentMethod": "string (e.g., 'card', 'wallet')",
+          "failureReason": "string (optional)",
+          "createdAt": "timestamp",
+          "updatedAt": "timestamp"
+        }
+      },
+
+      "adminUsers": {
+        "description": "Admin/staff accounts for clinic",
+        "fields": {
+          "id": "string (UUID, primary key)",
+          "clinicId": "string (foreign key → clinics)",
+          "email": "string (unique)",
+          "name": "string",
+          "role": "enum ('admin', 'receptionist', 'doctor', 'staff')",
+          "phone": "string",
+          "firebaseUid": "string (Firebase Auth UID)",
+          "lastLogin": "timestamp",
+          "isActive": "boolean",
+          "createdAt": "timestamp",
+          "updatedAt": "timestamp"
+        }
+      }
+    }
+  },
+
+  "features": {
+    "adminPanel": {
+      "accessControl": "Email + Password login via Firebase Auth",
+      "dashboard": {
+        "widgets": [
+          "Today's appointments count",
+          "Total revenue today",
+          "New patients this month",
+          "Pending payments",
+          "Recent appointments list"
+        ]
+      },
+      "clinicSettings": {
+        "description": "Editable clinic configuration",
+        "sections": {
+          "general": {
+            "fields": [
+              "Clinic name",
+              "Logo upload (image)",
+              "Description",
+              "Address",
+              "Phone number",
+              "Email",
+              "Primary color (color picker)",
+              "Secondary color (color picker)"
+            ]
+          },
+          "workingHours": {
+            "fields": [
+              "Working days (from-to)",
+              "Working hours start time",
+              "Working hours end time",
+              "Timezone"
+            ]
+          }
+        }
+      },
+      "specialtiesManagement": {
+        "operations": [
+          "Add specialty with name + description + base price + icon upload",
+          "Edit specialty details",
+          "Delete specialty (with confirmation)",
+          "Reorder specialties (drag-drop)",
+          "Toggle specialty active/inactive"
+        ]
+      },
+      "doctorsManagement": {
+        "operations": [
+          "Add doctor: name + phone + email + select specialty + profile photo + bio + qualifications",
+          "Set working hours (start-end time)",
+          "Set appointment duration (30 min / 60 min / custom)",
+          "Set max appointments per day",
+          "Set days off (multi-select)",
+          "Edit doctor information",
+          "Delete doctor",
+          "Toggle doctor active/inactive",
+          "View doctor's appointments for today/week/month"
+        ]
+      },
+      "appointmentsManagement": {
+        "operations": [
+          "View all appointments (filterable by date/doctor/status)",
+          "Confirm pending appointments",
+          "Mark appointment as completed",
+          "Cancel appointment with reason",
+          "Resend confirmation to patient",
+          "View appointment details (patient info + notes)"
+        ]
+      },
+      "patientsManagement": {
+        "operations": [
+          "View patient list",
+          "Search patients by name/phone",
+          "View patient profile (all appointments history)",
+          "Edit patient notes",
+          "Delete patient (with confirmation)",
+          "View medical history"
+        ]
+      },
+      "paymentsManagement": {
+        "operations": [
+          "View payment transactions (all/today/this month)",
+          "Filter by status (paid/unpaid/failed)",
+          "View payment details (patient + amount + date)",
+          "Resend payment receipt",
+          "View revenue reports by doctor/date"
+        ]
+      },
+      "staffManagement": {
+        "operations": [
+          "Add receptionist/staff (email + name + role)",
+          "Assign to clinic",
+          "View staff list",
+          "Reset staff password",
+          "Deactivate staff account"
+        ]
+      },
+      "reports": {
+        "availableReports": [
+          "Appointments report (by date/doctor/specialty)",
+          "Revenue report (daily/monthly/by doctor)",
+          "Patient statistics (new patients, total patients)",
+          "Doctor performance (appointments count, revenue)",
+          "Payment status report (pending/failed/successful)"
+        ],
+        "export": "CSV export for all reports"
+      }
+    },
+
+    "patientPortal": {
+      "accessFlow": "No login required initially (anonymous booking) OR optional patient account",
+      "bookingFlow": [
+        "1. Select specialty from clinic's available specialties",
+        "2. View doctors in selected specialty",
+        "3. Select doctor (see doctor's name, photo, qualifications)",
+        "4. View available appointment slots (calendar view with date + time)",
+        "5. Select preferred slot",
+        "6. Enter patient info: name, phone, email, DOB, gender, address (prefilled if logged in)",
+        "7. Add appointment notes (optional)",
+        "8. Choose payment method: Online (Paymob) OR Pay on Arrival",
+        "9. If online: Paymob payment gateway integration",
+        "10. Confirmation page: Appointment details + booking reference number",
+        "11. SMS notification: 'Booking confirmed. Appointment: [date] [time] with [doctor]'",
+        "12. In-app notification (if have app account)"
+      ],
+      "paymentOptions": [
+        "Online payment via Paymob",
+        "Pay on arrival (cash at clinic)"
+      ],
+      "patientAccount": {
+        "optional": true,
+        "benefits": [
+          "View all past/upcoming appointments",
+          "Modify appointment (reschedule/cancel)",
+          "View medical history notes",
+          "Save favorite doctors",
+          "Appointment reminders"
+        ],
+        "authentication": "Firebase Auth (email + password OR Google/Facebook)"
+      },
+      "appointmentReminder": "Notification 30 minutes before appointment: 'Your appointment is in 30 minutes. Doctor: [name]'",
+      "uiElements": {
+        "responsive": "Mobile-first design",
+        "colorScheme": "Uses clinic's primary + secondary colors from admin settings",
+        "logo": "Displays clinic logo at top",
+        "doctorCard": [
+          "Doctor photo",
+          "Doctor name",
+          "Specialty",
+          "Qualifications",
+          "Average rating (if review system added later)"
+        ],
+        "calendarView": "Shows available dates in next 30 days"
+      }
+    },
+
+    "receptionDashboard": {
+      "accessControl": "Login as receptionist (email + password via Firebase Auth)",
+      "mainView": [
+        "Filter by doctor (dropdown to select which doctor's appointments to view)",
+        "Display today's appointments in chronological order",
+        "For each appointment, show:",
+        "  - Patient name",
+        "  - Appointment time",
+        "  - Patient phone number",
+        "  - Status badge (pending/confirmed/arrived/completed)",
+        "  - [Call Patient] button (blue button with bell icon)"
+      ],
+      "callPatientButton": {
+        "action": "When clicked, send notification to patient",
+        "notification": "In-app alert: 'You're called! Please come to room [number] or reception area.'",
+        "optional": "SMS: 'You're being called at [clinic name]. Please come in.'",
+        "sound": "Notification sound on patient's app",
+        "dismissal": "Patient can dismiss notification after 1 minute"
+      },
+      "appointmentStatusFlow": [
+        "pending → (click 'Confirm') → confirmed",
+        "confirmed → (patient arrives, click 'Mark as Arrived') → arrived",
+        "arrived → (after appointment, click 'Complete') → completed",
+        "Any status → (click 'Cancel') → cancelled"
+      ],
+      "viewOptions": [
+        "Today's appointments (default)",
+        "This week's appointments",
+        "All pending appointments",
+        "Appointments by doctor (multi-select)"
+      ],
+      "refreshRate": "Auto-refresh every 10 seconds OR real-time via WebSocket"
+    },
+
+    "paymobIntegration": {
+      "flowType": "Hosted iframe or payment link",
+      "integration": [
+        "Patient selects online payment",
+        "Amount calculated: appointment price + optional SMS fee",
+        "Redirect to Paymob payment page",
+        "After successful payment, return to confirmation page",
+        "Store transaction ID in appointments table",
+        "Update payment_status to 'paid' in Firebase"
+      ],
+      "failureHandling": "If payment fails, allow retry OR option to pay on arrival",
+      "receiptGeneration": "After successful payment, generate PDF receipt with: appointment details, payment amount, transaction ID, clinic info",
+      "webhookIntegration": "Paymob webhook to confirm payment in backend"
+    },
+
+    "notificationsSystem": {
+      "channels": [
+        "In-app notifications (Firebase Cloud Messaging - FCM)",
+        "Optional SMS (Twilio - paid add-on)"
+      ],
+      "triggers": [
+        {
+          "event": "Appointment booked",
+          "message": "Booking confirmed. Appointment: [date] [time] with Dr. [name]",
+          "channels": ["in_app", "optional_sms"]
+        },
+        {
+          "event": "Appointment reminder",
+          "message": "Reminder: Your appointment is in 30 minutes with Dr. [name]",
+          "channels": ["in_app", "optional_sms"],
+          "timing": "30 minutes before appointment"
+        },
+        {
+          "event": "Receptionist calls patient",
+          "message": "You're called! Please come in.",
+          "channels": ["in_app"],
+          "sound": "notification sound"
+        },
+        {
+          "event": "Appointment cancelled",
+          "message": "Your appointment with Dr. [name] on [date] has been cancelled",
+          "channels": ["in_app", "optional_sms"]
+        },
+        {
+          "event": "Payment received",
+          "message": "Payment received for your appointment on [date]. Thank you!",
+          "channels": ["in_app"]
+        }
+      ],
+      "inAppNotifications": {
+        "storage": "Stored in 'notifications' table in Firestore",
+        "display": "Badge on patient app + notification center",
+        "persistence": "Stored until user deletes or 30 days passed"
+      },
+      "smsNotifications": {
+        "provider": "Twilio",
+        "cost": "2-3 EGP per SMS (pass cost to patient at checkout if opted-in)",
+        "optional": "Patient can enable/disable SMS during booking"
+      }
+    },
+
+    "realTimeUpdates": {
+      "technology": "Firebase Realtime Database OR WebSockets",
+      "updates": [
+        "Reception dashboard auto-updates when new appointment is booked",
+        "Appointment status changes sync in real-time",
+        "Patient sees confirmation instantly after payment",
+        "Admin sees new appointments without manual refresh"
+      ]
+    }
+  },
+
+  "sprintPlan": {
+    "sprint1": {
+      "name": "Project Setup + Admin Panel Foundation",
+      "duration": "1 week",
+      "tasks": [
+        "Set up folder structure: /assets, /pages, /js, /css, /images",
+        "Create index.html (main entry point)",
+        "Set up Firebase SDK (CDN link in HTML)",
+        "Initialize Firebase project (Firestore + Auth + FCM)",
+        "Create Firestore collection schema",
+        "Build admin login page (HTML form + CSS styling)",
+        "Write login.js (Firebase Auth email/password)",
+        "Build admin dashboard HTML template",
+        "Create dashboard.js (fetch data from Firestore, render widgets)",
+        "Write common.js (shared utilities, Firebase initialization)",
+        "Responsive CSS for mobile + desktop",
+        "Local testing with live server"
+      ]
+    },
+    "sprint2": {
+      "name": "Admin Settings - Clinic Configuration",
+      "duration": "1 week",
+      "tasks": [
+        "Create settings.html page",
+        "Build clinic settings form (HTML with inputs: name, logo, colors, hours)",
+        "Implement color picker (native HTML input type='color')",
+        "Write settings.js (form handling + validation)",
+        "Implement Firebase Storage upload for logo",
+        "Save clinic data to Firestore (clinics collection)",
+        "Create CSS custom properties (--primary-color, --secondary-color) for dynamic theming",
+        "Write theme.js (apply clinic colors to all pages dynamically)",
+        "Load clinic settings on page load",
+        "Update navbar/header with clinic logo + name on all pages",
+        "Test form validation + Firebase errors",
+        "Test responsive design (mobile + desktop)"
+      ]
+    },
+    "sprint3": {
+      "name": "Admin - Specialties Management",
+      "duration": "4-5 days",
+      "tasks": [
+        "Create specialties.html page",
+        "Build add specialty form (HTML inputs)",
+        "Implement icon/image upload for specialty",
+        "Write specialties.js (CRUD operations)",
+        "Display specialties list (dynamically generate HTML)",
+        "Implement edit specialty (modal popup)",
+        "Implement delete specialty (confirmation dialog)",
+        "Implement reorder (drag-drop with vanilla JS)",
+        "Toggle active/inactive (checkbox)",
+        "Save all changes to Firestore",
+        "Add loading states + error handling"
+      ]
+    },
+    "sprint4": {
+      "name": "Admin - Doctors Management",
+      "duration": "1 week",
+      "tasks": [
+        "Create doctors.html page",
+        "Build add doctor form (name, phone, email, specialty dropdown)",
+        "Doctor photo upload functionality",
+        "Qualifications multi-input (add/remove fields dynamically)",
+        "Time picker inputs (working hours start/end)",
+        "Appointment duration dropdown",
+        "Max appointments per day input",
+        "Days off multi-select (checkboxes for each day)",
+        "Write doctors.js (form handling + validation)",
+        "Display doctors list (cards or table view)",
+        "Implement edit/delete with modals",
+        "Auto-generate available slots function (algorithm)",
+        "Save to Firestore + test data persistence"
+      ]
+    },
+    "sprint5": {
+      "name": "Available Slots Generation & Patient Portal - Booking Flow",
+      "duration": "1 week",
+      "tasks": [
+        "Create slots.js (algorithm to generate slots for next 30 days)",
+        "Algorithm logic: For each doctor → for each working day → create slots",
+        "Store generated slots in Firestore (availableSlots collection)",
+        "Create public/index.html (patient portal home - no auth required)",
+        "Build specialties display (fetch from Firestore, render dynamically)",
+        "Implement specialty selection logic",
+        "Create doctors-list.html (show doctors for selected specialty)",
+        "Fetch doctors by specialty, display with info",
+        "Create appointment-booking.html (calendar view)",
+        "Build calendar UI (vanilla JS date manipulation)",
+        "Show available slots for selected doctor + date"
+      ]
+    },
+    "sprint6": {
+      "name": "Patient Booking & Payment Integration",
+      "duration": "1 week",
+      "tasks": [
+        "Create booking-form.html (patient info collection)",
+        "Build form with: name, phone, email, DOB, gender, address, notes",
+        "Write booking.js (form validation)",
+        "Implement payment method selection (radio buttons: online/cash)",
+        "Integrate Paymob (hosted iframe/redirect)",
+        "Write paymob.js (payment logic + API calls)",
+        "Handle payment success/failure responses",
+        "Store appointment in Firestore on success",
+        "Update availableSlots (mark as booked)",
+        "Create confirmation.html (booking reference + details)",
+        "Generate PDF receipt (jsPDF library or simple HTML print)",
+        "Send SMS notification via backend (optional)",
+        "Error handling + retry logic"
+      ]
+    },
+    "sprint7": {
+      "name": "Reception Dashboard",
+      "duration": "1 week",
+      "tasks": [
+        "Create admin/reception.html (receptionist view)",
+        "Build receptionist login (separate from admin)",
+        "Doctor filter dropdown (select which doctor to view)",
+        "Display today's appointments list (fetch from Firestore)",
+        "For each appointment: name, time, phone, status badge",
+        "Write reception.js (real-time data fetching)",
+        "Implement [Call Patient] button (send notification)",
+        "Notification logic: in-app alert to patient device",
+        "Optional: SMS alert via backend",
+        "Status update buttons (confirm/arrived/completed/cancelled)",
+        "Color-coded status badges (pending=yellow, confirmed=blue, etc)",
+        "Real-time updates (Firebase Realtime Listener)",
+        "Filter by date/status dropdown"
+      ]
+    },
+    "sprint8": {
+      "name": "Admin - Appointments & Payments Management",
+      "duration": "4-5 days",
+      "tasks": [
+        "Create admin/appointments.html page",
+        "Build appointments filter (date picker, status dropdown, doctor filter)",
+        "Display appointments in table/list (fetch from Firestore)",
+        "Implement view details modal (patient + doctor info)",
+        "Add action buttons: confirm, complete, cancel",
+        "Create admin/payments.html page",
+        "Build payments filter (date, status, doctor)",
+        "Display payment transactions table",
+        "Calculate total revenue by date/doctor",
+        "Implement CSV export (vanilla JS - generate CSV string + download)",
+        "Write admin-reports.js (data aggregation + calculations)",
+        "Test with real Firestore data"
+      ]
+    },
+    "sprint9": {
+      "name": "Patient Account System & Notifications",
+      "duration": "1 week",
+      "tasks": [
+        "Create patient-account.html (optional login page)",
+        "Implement patient registration + login (Firebase Auth)",
+        "Write patient-auth.js (Firebase Auth handling)",
+        "Create patient-dashboard.html (past/upcoming appointments)",
+        "Fetch patient's appointments from Firestore",
+        "Implement reschedule appointment (modal with new slots)",
+        "Implement cancel appointment (confirmation + reason)",
+        "Setup Firebase Cloud Messaging (FCM) - service worker",
+        "Create notifications.js (handle FCM messages)",
+        "Build notifications center UI",
+        "Store notifications in localStorage/IndexedDB",
+        "Mark notifications as read",
+        "Send notifications on key events (booking, reminder, confirmation)"
+      ]
+    },
+    "sprint10": {
+      "name": "Staff Management, Reports & Polish",
+      "duration": "1 week",
+      "tasks": [
+        "Create admin/staff.html page",
+        "Build add staff form (email, name, role)",
+        "Implement staff list with actions (edit, delete, deactivate)",
+        "Write staff.js (CRUD for staff accounts)",
+        "Create admin/reports.html (comprehensive reports page)",
+        "Reports: appointments by date/doctor/specialty",
+        "Reports: revenue analysis (daily/monthly/by doctor)",
+        "Reports: patient statistics (total, new this month)",
+        "Doctor performance metrics (appointments count, revenue)",
+        "CSV export functionality for all reports",
+        "Polish all pages: consistent styling, smooth interactions",
+        "Test responsive design on mobile + tablet + desktop",
+        "Add loading spinners + error messages across app",
+        "Performance optimization: minimize DOM reflows"
+      ]
+    },
+    "sprint11": {
+      "name": "Testing, Deployment & Launch Prep",
+      "duration": "1 week",
+      "tasks": [
+        "End-to-end testing: full patient booking flow",
+        "Admin panel testing: all CRUD operations",
+        "Reception dashboard testing: call patient notifications",
+        "Payment testing with Paymob sandbox",
+        "Notification testing (FCM + in-app)",
+        "Cross-browser testing (Chrome, Firefox, Safari, Edge)",
+        "Mobile browser testing (iOS Safari, Chrome Mobile)",
+        "Bug fixes + refinements based on testing",
+        "Optimize images + assets",
+        "Minify CSS + JavaScript for production",
+        "Deploy to Vercel (or GitHub Pages)",
+        "Setup custom domain + SSL",
+        "Setup Firebase production environment",
+        "Final QA + smoke testing",
+        "Launch announcement"
+      ]
+    }
+  },
+
+  "projectStructure": {
+    "description": "Folder structure for Vanilla JavaScript project",
+    "structure": {
+      "root": {
+        "index.html": "Patient portal home page",
+        "public/": {
+          "index.html": "Patient booking portal",
+          "doctors-list.html": "Show doctors for selected specialty",
+          "appointment-booking.html": "Calendar + slot selection",
+          "booking-form.html": "Patient info + payment",
+          "confirmation.html": "Booking confirmation page",
+          "patient-account.html": "Patient login/signup",
+          "patient-dashboard.html": "Patient's appointments"
+        },
+        "admin/": {
+          "index.html": "Admin dashboard home",
+          "login.html": "Admin login page",
+          "settings.html": "Clinic settings (name, logo, colors)",
+          "specialties.html": "Manage specialties",
+          "doctors.html": "Manage doctors",
+          "appointments.html": "View/manage appointments",
+          "payments.html": "Payment transactions",
+          "reports.html": "Reports + analytics",
+          "staff.html": "Manage staff accounts",
+          "reception.html": "Reception dashboard"
+        },
+        "css/": {
+          "style.css": "Global styles + CSS variables for theming",
+          "layout.css": "Responsive grid + flexbox layouts",
+          "components.css": "Reusable component styles (buttons, forms, modals)",
+          "colors.css": "Color theme (updated dynamically)"
+        },
+        "js/": {
+          "common.js": "Firebase init + shared utilities + helpers",
+          "auth.js": "Login/logout logic (admin + patient)",
+          "dashboard.js": "Admin dashboard data + rendering",
+          "settings.js": "Clinic settings form handling",
+          "specialties.js": "Specialty CRUD operations",
+          "doctors.js": "Doctor management",
+          "slots.js": "Slot generation algorithm",
+          "booking.js": "Patient booking form + validation",
+          "paymob.js": "Paymob payment integration",
+          "reception.js": "Reception dashboard + notifications",
+          "appointments.js": "Appointments management",
+          "payments.js": "Payment transactions + reporting",
+          "reports.js": "Report generation + CSV export",
+          "staff.js": "Staff account management",
+          "notifications.js": "FCM + in-app notification handling",
+          "theme.js": "Dynamic theming (apply clinic colors)",
+          "utils.js": "Date formatting, validation, helper functions"
+        },
+        "assets/": {
+          "images/": "Clinic logos, doctor photos, icons",
+          "icons/": "UI icons (add, edit, delete, etc)",
+          "fonts/": "Custom fonts (optional)"
+        },
+        "firebase/": {
+          "firestore-schema.js": "Firestore collection/document structure documentation"
+        }
+      }
+    }
+  },
+
+  "codingGuidelines": {
+    "vanillaJavaScript": {
+      "domManipulation": [
+        "Use document.getElementById(), querySelector() for element selection",
+        "Use textContent/innerHTML for content updates",
+        "Use addEventListener() for event handling",
+        "Use data-* attributes for storing data on HTML elements",
+        "Avoid jQuery - pure JavaScript only"
+      ],
+      "stateManagement": [
+        "Use plain JavaScript objects to store state",
+        "Use localStorage for persistence (clinic settings, user preferences)",
+        "Pass state through function parameters (functional approach)",
+        "Use closure for module pattern (IIFE - Immediately Invoked Function Expression)"
+      ],
+      "asyncOperations": [
+        "Use Fetch API for HTTP requests (no axios)",
+        "Use async/await for cleaner asynchronous code",
+        "Handle errors with try/catch",
+        "Firebase operations are promise-based - use .then() or async/await"
+      ],
+      "templates": [
+        "Use template literals (backticks) for HTML templates",
+        "Example: `<div class='card'>${doctorName}</div>`",
+        "Create functions that return HTML strings",
+        "Use innerHTML to render templates into DOM"
+      ],
+      "modularity": [
+        "Each feature in its own .js file (doctors.js, specialties.js, etc)",
+        "Export functions using common.js patterns or ES6 modules",
+        "Keep functions small and focused (single responsibility)",
+        "Reuse utility functions from utils.js"
+      ]
+    },
+    "cssGuidelines": [
+      "Use CSS Grid + Flexbox for responsive layouts",
+      "Mobile-first approach (base styles for mobile, @media for desktop)",
+      "CSS custom properties (variables) for colors: --primary-color, --secondary-color",
+      "Normalize styles across browsers",
+      "Use CSS classes for styling (not inline styles)",
+      "BEM naming convention for classes: .block__element--modifier"
+    ],
+    "firebaseIntegration": [
+      "Initialize Firebase once in common.js",
+      "Use Firestore for database operations",
+      "Use Firebase Auth for user authentication",
+      "Use Firebase Cloud Messaging for push notifications",
+      "Use Firebase Storage for image uploads (logos, photos)",
+      "Use Firestore listeners (.onSnapshot()) for real-time updates"
+    ]
+  },
+
+  "deploymentPlan": {
+    "frontend": {
+      "platform": "Vercel OR GitHub Pages OR Netlify",
+      "hosting": "Static hosting (HTML + CSS + JS)",
+      "deployment": "Git push to GitHub → auto-deploys",
+      "buildProcess": "No build step required (vanilla JS)",
+      "customDomain": "Your domain.com"
+    },
+    "backend": {
+      "database": "Firebase Firestore (serverless)",
+      "authentication": "Firebase Auth",
+      "fileStorage": "Firebase Storage",
+      "notifications": "Firebase Cloud Messaging (FCM)",
+      "api": "Firestore + Firebase Cloud Functions (optional for backend logic)",
+      "noServer": "Everything runs via Firebase SDK from client"
+    },
+    "database": {
+      "primary": "Firestore (NoSQL, real-time, scalable)",
+      "backup": "Regular exports from Firebase Console",
+      "security": "Firestore security rules for access control"
+    },
+    "storage": {
+      "clinicLogos": "Firebase Storage /clinics/",
+      "doctorPhotos": "Firebase Storage /doctors/",
+      "specialtyIcons": "Firebase Storage /specialties/",
+      "receipts": "Generated on-the-fly (no storage needed)"
+    },
+    "environment": {
+      "development": "Local file:// OR local server (python -m http.server)",
+      "production": "Vercel/GitHub Pages + Firebase production project"
+    }
+  },
+
+  "localDevelopmentSetup": {
+    "prerequisites": [
+      "Node.js installed (for running local server)",
+      "Git for version control",
+      "Firebase project created (free tier)"
+    ],
+    "steps": [
+      "1. Clone repo: git clone [your-repo]",
+      "2. Create .env file with Firebase credentials",
+      "3. Install Firebase SDK (CDN links in HTML OR npm if using bundler)",
+      "4. Run local server: python -m http.server 8000 OR npx http-server",
+      "5. Open http://localhost:8000 in browser",
+      "6. Test admin panel + patient portal locally",
+      "7. Connect to Firebase (real data)"
+    ]
+  },
+
+  "monetizationModel": {
+    "saasPlans": [
+      {
+        "name": "Starter",
+        "price": "99 EGP/month",
+        "features": [
+          "Up to 5 doctors",
+          "Up to 3 specialties",
+          "Up to 200 appointments/month",
+          "Basic reports"
+        ]
+      },
+      {
+        "name": "Professional",
+        "price": "199 EGP/month",
+        "features": [
+          "Up to 20 doctors",
+          "Up to 10 specialties",
+          "Unlimited appointments",
+          "Advanced reports",
+          "Staff management (up to 5 staff)",
+          "SMS notifications included (100/month)"
+        ]
+      },
+      {
+        "name": "Enterprise",
+        "price": "399 EGP/month",
+        "features": [
+          "Unlimited doctors + specialties",
+          "Unlimited appointments",
+          "Full reports + analytics",
+          "Unlimited staff",
+          "Unlimited SMS",
+          "Priority support",
+          "Custom integrations"
+        ]
+      }
+    ],
+    "additionalRevenue": [
+      "SMS charges: 2-3 EGP per SMS (if patient opts-in)",
+      "API access for third-party integrations: 500 EGP/month"
+    ]
+  },
+
+  "futureFeatures": [
+    "Patient reviews + ratings for doctors",
+    "Appointment reminder 1 day before (SMS/email)",
+    "Telemedicine integration (video consultation)",
+    "Prescription management + pharmacy integration",
+    "Lab results integration",
+    "Insurance claim automation",
+    "Multi-clinic management (for clinic groups)",
+    "Mobile app (React Native)",
+    "Doctor performance analytics",
+    "Patient satisfaction surveys",
+    "Appointment cancellation waitlist",
+    "Recurring appointments (follow-ups)",
+    "WhatsApp integration for notifications"
+  ],
+
+  "successCriteria": [
+    "All appointments booked through system",
+    "Zero missed appointments (via reminders)",
+    "Payment success rate > 95%",
+    "Patient satisfaction score > 4.5/5",
+    "System uptime > 99.9%",
+    "Receptionist can call patient in < 2 seconds",
+    "Clinic admin can manage specialties/doctors in < 5 minutes"
+  ],
+
+  "gettingStarted": {
+    "step1": {
+      "title": "Initialize Project",
+      "actions": [
+        "Create project folder: mkdir clinic-management-system",
+        "cd clinic-management-system",
+        "git init",
+        "Create folder structure: /public, /admin, /css, /js, /assets"
+      ]
+    },
+    "step2": {
+      "title": "Create Firebase Project",
+      "actions": [
+        "Go to firebase.google.com",
+        "Create new project (free tier)",
+        "Enable Firestore Database",
+        "Enable Firebase Auth (Email/Password)",
+        "Enable Firebase Storage",
+        "Enable Cloud Messaging (for notifications)",
+        "Get Firebase config (project ID, API key, etc)"
+      ]
+    },
+    "step3": {
+      "title": "Create index.html (Entry Point)",
+      "content": "DOCTYPE + head (Firebase CDN scripts) + body (navbar + router)"
+    },
+    "step4": {
+      "title": "Create common.js (Firebase Init)",
+      "content": "Initialize Firebase SDK with your config credentials"
+    },
+    "step5": {
+      "title": "Create Global CSS (style.css)",
+      "content": "CSS variables (--primary-color, --secondary-color) + responsive layout"
+    },
+    "step6": {
+      "title": "Build Admin Login Page",
+      "content": "admin/login.html + js/auth.js (Firebase Auth integration)"
+    },
+    "step7": {
+      "title": "Push to GitHub",
+      "actions": [
+        "git add .",
+        "git commit -m 'Initial commit'",
+        "git push -u origin main"
+      ]
+    },
+    "step8": {
+      "title": "Deploy to Vercel/GitHub Pages",
+      "actions": [
+        "Connect GitHub repo to Vercel",
+        "Deploy automatically on git push",
+        "Add custom domain (optional)"
+      ]
+    }
+  },
+
+  "exampleCode": {
+    "firebaseInit": {
+      "filename": "js/common.js",
+      "description": "Initialize Firebase and export commonly used functions",
+      "pseudocode": [
+        "import Firebase SDK",
+        "const firebaseConfig = { /* your config */ }",
+        "firebase.initializeApp(firebaseConfig)",
+        "export: db (Firestore), auth (Firebase Auth), storage (Storage)",
+        "Helper functions: getCurrentUser(), logout(), etc"
+      ]
+    },
+    "htmlForm": {
+      "filename": "admin/login.html",
+      "description": "Simple login form",
+      "pseudocode": [
+        "<form id='loginForm'>",
+        "  <input type='email' id='email' placeholder='Email'>",
+        "  <input type='password' id='password' placeholder='Password'>",
+        "  <button type='submit'>Login</button>",
+        "</form>"
+      ]
+    },
+    "formHandling": {
+      "filename": "js/auth.js",
+      "description": "Handle login form submission",
+      "pseudocode": [
+        "document.getElementById('loginForm').addEventListener('submit', async (e) => {",
+        "  e.preventDefault()",
+        "  const email = document.getElementById('email').value",
+        "  const password = document.getElementById('password').value",
+        "  try {",
+        "    const result = await auth.signInWithEmailAndPassword(email, password)",
+        "    window.location.href = '/admin/dashboard.html'",
+        "  } catch (error) {",
+        "    console.error('Login failed:', error.message)",
+        "    alert('Login failed: ' + error.message)",
+        "  }",
+        "})"
+      ]
+    },
+    "firebaseDataFetch": {
+      "filename": "js/dashboard.js",
+      "description": "Fetch data from Firestore and render",
+      "pseudocode": [
+        "async function loadDoctors() {",
+        "  const snapshot = await db.collection('doctors').get()",
+        "  snapshot.forEach(doc => {",
+        "    const doctor = doc.data()",
+        "    const html = `<div class='doctor-card'>${doctor.name}</div>`",
+        "    document.getElementById('doctorsList').innerHTML += html",
+        "  })",
+        "}",
+        "loadDoctors()"
+      ]
+    },
+    "domManipulation": {
+      "filename": "js/utils.js",
+      "description": "Common DOM manipulation utilities",
+      "pseudocode": [
+        "function renderElement(selector, content) {",
+        "  document.querySelector(selector).innerHTML = content",
+        "}",
+        "function addEventListener(selector, event, callback) {",
+        "  document.addEventListener(event, callback)",
+        "}",
+        "function getFormData(formId) {",
+        "  const formElement = document.getElementById(formId)",
+        "  return new FormData(formElement)",
+        "}"
+      ]
+    }
+  },
+
+  "notes": {
+    "dataManagement": "All displayed data comes from admin inputs. No hardcoded or dummy data will be used.",
+    "customization": "Every clinic instance can customize name, logo, colors, doctors, specialties via the admin panel.",
+    "scalability": "System designed to handle single clinic to multi-doctor clinics seamlessly.",
+    "security": "Firebase Auth for user authentication. Role-based access control (admin, receptionist, patient).",
+    "privacy": "Patient data encrypted. GDPR + local data protection compliance considered.",
+    "supportLanguage": "only arabic language"
+  }
+}

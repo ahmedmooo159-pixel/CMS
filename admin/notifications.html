@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>التنبيهات والرسائل - لوحة التحكم</title>
+
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+  <style>
+    .notify-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .status-bar { padding:.75rem 1rem;border-radius:8px;font-size:.9rem;margin-bottom:1.25rem;display:none; }
+    .status-bar.success { background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:var(--success); }
+    .status-bar.error   { background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:var(--danger); }
+
+    .whatsapp-btn {
+      background: #25D366;
+      color: #fff;
+      border: none;
+      padding: .4rem .85rem;
+      border-radius: 8px;
+      font-size: .8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      text-decoration: none;
+      transition: opacity .2s;
+    }
+    .whatsapp-btn:hover { opacity: .9; color: #fff; }
+
+    .tbl-btn { padding:.35rem .65rem;font-size:.78rem;border-radius:7px;border:1px solid var(--border-color);background:transparent;color:var(--text-muted);cursor:pointer;white-space:nowrap;transition:all .18s; }
+    .tbl-btn:hover { color:var(--text-primary);border-color:var(--border-hover); }
+
+    .template-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1rem;
+      font-size: .88rem;
+      color: var(--text-primary);
+      margin-top: .5rem;
+      white-space: pre-wrap;
+    }
+
+    .notify-table-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border-color); }
+    .notify-table { width:100%; border-collapse:collapse; font-size:.875rem; }
+    .notify-table th { background:rgba(255,255,255,.03); padding:.85rem 1rem; text-align:right; font-weight:600; color:var(--text-muted); font-size:.78rem; border-bottom:1px solid var(--border-color); white-space:nowrap; }
+    .notify-table td { padding:.85rem 1rem; border-bottom:1px solid rgba(255,255,255,.04); vertical-align:middle; }
+    .notify-table tr:last-child td { border-bottom:none; }
+    .notify-table tbody tr:hover { background:rgba(255,255,255,.025); }
+
+    .empty-row td { text-align:center;padding:3rem;color:var(--text-muted); }
+  </style>
+</head>
+<body>
+
+  <header class="mobile-nav">
+    <div class="flex align-center gap-3">
+      <button id="sidebar-toggle" style="background:none;border:none;color:var(--text-primary);font-size:1.5rem;cursor:pointer;">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <h1 style="font-family:var(--font-display);font-size:1.25rem;">إدارة العيادة</h1>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    <aside id="app-sidebar" class="sidebar">
+      <div class="sidebar-logo">
+        <i class="fa-solid fa-laptop-medical" style="color:var(--primary-color);"></i>
+        <span>إدارة العيادة</span>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="sidebar-item"><a href="index.html"><i class="fa-solid fa-chart-line"></i> لوحة التحكم</a></li>
+        <li class="sidebar-item"><a href="settings.html"><i class="fa-solid fa-gears"></i> إعدادات العيادة</a></li>
+        <li class="sidebar-item"><a href="specialties.html"><i class="fa-solid fa-briefcase-medical"></i> التخصصات</a></li>
+        <li class="sidebar-item"><a href="doctors.html"><i class="fa-solid fa-user-doctor"></i> الأطباء</a></li>
+        <li class="sidebar-item"><a href="appointments.html"><i class="fa-solid fa-calendar-check"></i> الحجوزات</a></li>
+        <li class="sidebar-item"><a href="payments.html"><i class="fa-solid fa-file-invoice-dollar"></i> المدفوعات</a></li>
+        <li class="sidebar-item"><a href="reception.html"><i class="fa-solid fa-desktop"></i> شاشة الاستقبال</a></li>
+        <li class="sidebar-item active"><a href="notifications.html"><i class="fa-solid fa-paper-plane"></i> التنبيهات والرسائل</a></li>
+        <li class="sidebar-item" style="margin-top:auto;border-top:1px solid var(--border-color);padding-top:1rem;">
+          <a href="#" id="logout-btn" style="color:var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج</a>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="main-content">
+
+      <!-- Header -->
+      <div class="flex justify-between align-center flex-wrap gap-4" style="margin-bottom:2rem;">
+        <div>
+          <h2 style="font-size:2rem;font-family:var(--font-display);">تنبيهات الواتساب والرسائل</h2>
+          <p style="color:var(--text-muted);font-size:.95rem;">إرسال التذکیر بالمواعيد وإشعارات الحجز عبر WhatsApp و SMS.</p>
+        </div>
+      </div>
+
+      <div id="notify-status" class="status-bar"></div>
+
+      <!-- Quick Template Preview -->
+      <div class="notify-card">
+        <h3 style="font-family:var(--font-display);font-size:1.1rem;margin-bottom:0.5rem;">
+          <i class="fa-brands fa-whatsapp" style="color:#25D366;margin-left:.4rem;"></i>
+          قالب رسالة التذكير التلقائية
+        </h3>
+        <p style="color:var(--text-muted);font-size:.85rem;">يتم استخدام هذا النص عند النقر على إرسال تذكير للمريض عبر الواتساب:</p>
+        <div class="template-box">مرحباً {اسم_المريض} 👋
+نود تذكيركم بموعدكم القادم في {اسم_العيادة}.
+👨‍⚕️ الطبيب: {اسم_الطبيب}
+📅 التاريخ: {التاريخ}
+⏰ الوقت: {الوقت}
+🔢 رقمك في الدور: #{رقم_الدور}
+🔖 رقم الحجز: {رقم_الحجز}
+
+يرجى الحضور قبل الموعد بـ 10 دقائق. نتمنى لكم دوام الصحة!</div>
+      </div>
+
+      <!-- Filter / Search -->
+      <div class="flex gap-3 margin-bottom-4" style="margin-bottom: 1.25rem;">
+        <input type="text" id="search-notify" class="form-input" placeholder="🔍  بحث باسم المريض أو رقم الهاتف..." style="flex:1;">
+        <select id="filter-date-notify" class="form-input" style="width:180px;">
+          <option value="today">مواعيد اليوم</option>
+          <option value="tomorrow">مواعيد الغد</option>
+          <option value="all">جميع المواعيد القادمة</option>
+        </select>
+      </div>
+
+      <!-- Appointments List Table -->
+      <div class="notify-table-wrap">
+        <table class="notify-table">
+          <thead>
+            <tr>
+              <th>المريض</th>
+              <th>رقم الهاتف</th>
+              <th>الطبيب</th>
+              <th>التاريخ والوقت</th>
+              <th>الدور</th>
+              <th>رقم الحجز</th>
+              <th>إرسال واتساب</th>
+            </tr>
+          </thead>
+          <tbody id="notify-tbody">
+            <tr class="empty-row"><td colspan="7"><i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;color:var(--primary-color);"></i><p style="margin-top:.75rem;">جاري تحميل المواعيد...</p></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="../js/common.js"></script>
+  <script src="../js/theme.js"></script>
+  <script src="../js/notifications.js"></script>
+  <script>
+    document.getElementById('sidebar-toggle').addEventListener('click', () =>
+      document.getElementById('app-sidebar').classList.toggle('active'));
+  </script>
+</body>
+</html>

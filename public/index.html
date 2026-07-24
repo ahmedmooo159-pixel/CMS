@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>العيادة - احجز موعدك الآن</title>
+  <meta name="description" content="احجز موعدك في العيادة بسهولة واختر طبيبك المناسب">
+
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+
+  <style>
+    /* ---- Public Portal Layout ---- */
+    .portal-nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(11,15,25,.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border-color);
+      padding: .9rem 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .portal-logo {
+      display: flex; align-items: center; gap: .75rem;
+      font-family: var(--font-display); font-size: 1.25rem; font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .portal-logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; color: #fff;
+    }
+
+    /* ---- Hero ---- */
+    .portal-hero {
+      padding: 5rem 2rem 4rem;
+      text-align: center;
+      background: radial-gradient(ellipse at 50% 0%, rgba(79,70,229,.18) 0%, transparent 60%);
+    }
+
+    .hero-title {
+      font-size: clamp(2rem, 5vw, 3.25rem);
+      font-family: var(--font-display);
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+
+    .hero-title span {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: 1.05rem; color: var(--text-muted);
+      max-width: 520px; margin: 0 auto 2.5rem;
+    }
+
+    .hero-steps {
+      display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;
+      margin-bottom: 3rem;
+    }
+
+    .step-pill {
+      display: flex; align-items: center; gap: .5rem;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border-color);
+      border-radius: 99px; padding: .45rem 1rem;
+      font-size: .85rem; font-weight: 500;
+    }
+
+    .step-pill i { color: var(--primary-color); }
+
+    /* ---- Specialties Section ---- */
+    .section {
+      max-width: 1100px; margin: 0 auto; padding: 3rem 1.5rem;
+    }
+
+    .section-title {
+      font-family: var(--font-display); font-size: 1.6rem; font-weight: 700;
+      margin-bottom: .5rem;
+    }
+
+    .section-subtitle { color: var(--text-muted); font-size: .95rem; margin-bottom: 2rem; }
+
+    /* ---- Specialty Cards ---- */
+    .specialties-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .specialty-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px; padding: 1.5rem 1rem;
+      text-align: center; cursor: pointer;
+      transition: all .25s cubic-bezier(.16,1,.3,1);
+      text-decoration: none; color: var(--text-primary);
+      display: flex; flex-direction: column; align-items: center; gap: .75rem;
+    }
+
+    .specialty-card:hover {
+      border-color: var(--primary-color);
+      background: rgba(79,70,229,.06);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px rgba(79,70,229,.18);
+      color: var(--text-primary);
+    }
+
+    .specialty-card-icon {
+      width: 64px; height: 64px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(79,70,229,.15), rgba(6,182,212,.12));
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      font-size: 1.75rem; color: var(--primary-color);
+    }
+
+    .specialty-card-icon img { width:100%; height:100%; object-fit:cover; }
+
+    .specialty-card-name {
+      font-family: var(--font-display); font-weight: 600; font-size: .95rem;
+    }
+
+    .specialty-card-price {
+      font-size: .8rem; color: var(--secondary-color); font-weight: 600;
+    }
+
+    /* ---- Stats Bar ---- */
+    .stats-bar {
+      background: rgba(22,28,45,.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-color);
+      border-radius: 16px; padding: 1.25rem 2rem;
+      display: flex; justify-content: space-around; align-items: center;
+      gap: 1rem; flex-wrap: wrap;
+      max-width: 700px; margin: 0 auto 3rem;
+    }
+
+    .stat-item { text-align: center; }
+    .stat-num { font-family: var(--font-display); font-size: 1.75rem; font-weight: 800; color: var(--primary-color); }
+    .stat-label { font-size: .8rem; color: var(--text-muted); }
+
+    /* ---- Empty state ---- */
+    .empty-state { text-align:center; padding:3rem 2rem; color:var(--text-muted); }
+    .empty-state .empty-icon { font-size:3rem; margin-bottom:1rem; opacity:.4; }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="portal-nav">
+    <div class="portal-logo">
+      <div class="portal-logo-icon" id="nav-logo-container">
+        <i class="fa-solid fa-hospital"></i>
+      </div>
+      <span id="clinic-name">العيادة</span>
+    </div>
+    <a href="../admin/login.html" class="btn btn-secondary" style="padding:.5rem 1rem;font-size:.85rem;">
+      <i class="fa-solid fa-lock"></i> لوحة التحكم
+    </a>
+  </nav>
+
+  <!-- Hero -->
+  <section class="portal-hero">
+    <h1 class="hero-title">احجز موعدك<br><span id="hero-clinic-name">مع أفضل الأطباء</span></h1>
+    <p class="hero-subtitle" id="clinic-tagline">اختر تخصصك، حدد طبيبك، واحجز موعدك في ثوانٍ — بدون تسجيل.</p>
+
+    <div class="hero-steps">
+      <div class="step-pill"><i class="fa-solid fa-1"></i> اختر التخصص</div>
+      <div class="step-pill"><i class="fa-solid fa-2"></i> اختر الطبيب</div>
+      <div class="step-pill"><i class="fa-solid fa-3"></i> حدد الموعد</div>
+      <div class="step-pill"><i class="fa-solid fa-4"></i> أكد الحجز</div>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-num" id="stat-specialties">--</div>
+        <div class="stat-label">تخصص طبي</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="stat-doctors">--</div>
+        <div class="stat-label">طبيب متاح</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="stat-slots">--</div>
+        <div class="stat-label">موعد متاح</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Specialties -->
+  <section class="section">
+    <h2 class="section-title"><i class="fa-solid fa-briefcase-medical" style="color:var(--primary-color);margin-left:.5rem;"></i> التخصصات المتاحة</h2>
+    <p class="section-subtitle">اختر التخصص الطبي للبدء في حجز موعدك</p>
+
+    <div id="specialties-grid" class="specialties-grid">
+      <div class="empty-state" style="grid-column:1/-1;">
+        <div class="empty-icon"><i class="fa-solid fa-spinner fa-spin" style="color:var(--primary-color);"></i></div>
+        <p>جاري تحميل التخصصات...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scripts -->
+  <script src="../js/common.js"></script>
+  <script src="../js/theme.js"></script>
+  <script src="../js/portal.js"></script>
+</body>
+</html>

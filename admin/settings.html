@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إعدادات العيادة - لوحة التحكم</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/components.css">
+  
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Firebase SDK Compat -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+
+  <!-- Mobile Nav Header -->
+  <header class="mobile-nav">
+    <div class="flex align-center gap-3">
+      <button id="sidebar-toggle" style="background: none; border: none; color: var(--text-primary); font-size: 1.5rem; cursor: pointer;">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <h1 style="font-family: var(--font-display); font-size: 1.25rem;">إدارة العيادة</h1>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside id="app-sidebar" class="sidebar">
+      <div class="sidebar-logo">
+        <i class="fa-solid fa-laptop-medical" style="color: var(--primary-color);"></i>
+        <span>إدارة العيادة</span>
+      </div>
+      
+      <ul class="sidebar-menu">
+        <li class="sidebar-item">
+          <a href="index.html"><i class="fa-solid fa-chart-line"></i> لوحة التحكم</a>
+        </li>
+        <li class="sidebar-item active">
+          <a href="settings.html"><i class="fa-solid fa-gears"></i> إعدادات العيادة</a>
+        </li>
+        <li class="sidebar-item">
+          <a href="specialties.html"><i class="fa-solid fa-briefcase-medical"></i> التخصصات</a>
+        </li>
+        <li class="sidebar-item">
+          <a href="doctors.html"><i class="fa-solid fa-user-doctor"></i> الأطباء</a>
+        </li>
+        <li class="sidebar-item">
+          <a href="appointments.html"><i class="fa-solid fa-calendar-check"></i> الحجوزات</a>
+        </li>
+        <li class="sidebar-item">
+          <a href="payments.html"><i class="fa-solid fa-file-invoice-dollar"></i> المدفوعات</a>
+        </li>
+        <li class="sidebar-item">
+          <a href="reception.html"><i class="fa-solid fa-desktop"></i> شاشة الاستقبال</a>
+        </li>
+        <li class="sidebar-item" style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <a href="#" id="logout-btn" style="color: var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج</a>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Header -->
+      <div class="flex justify-between align-center" style="margin-bottom: 2rem;">
+        <div>
+          <h2 style="font-size: 2rem; font-family: var(--font-display);">إعدادات العيادة</h2>
+          <p style="color: var(--text-muted); font-size: 0.95rem;">تعديل معلومات العيادة، الشعار، ألوان العلامة التجارية، وساعات العمل</p>
+        </div>
+      </div>
+
+      <!-- Settings Notification -->
+      <div id="settings-status" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.9rem; margin-bottom: 1.5rem;"></div>
+
+      <!-- Settings Form -->
+      <form id="settingsForm" class="grid gap-6" style="grid-template-columns: 1fr;">
+        
+        <div class="grid gap-6" style="grid-template-columns: 1fr; align-items: start;">
+          
+          <!-- General Settings Card -->
+          <div class="card flex flex-col gap-4">
+            <h3 style="font-size: 1.25rem; font-family: var(--font-display); border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 0.5rem;">
+              <i class="fa-solid fa-circle-info" style="color: var(--primary-color); margin-right: 0.5rem;"></i> المعلومات العامة للعيادة
+            </h3>
+            
+            <div class="grid gap-4" style="grid-template-columns: 1fr;">
+              <div class="form-group">
+                <label for="clinicNameInput" class="form-label">اسم العيادة</label>
+                <input type="text" id="clinicNameInput" class="form-input" placeholder="مثال: مركز الأمل لطب الأسنان" required>
+              </div>
+
+              <div class="form-group">
+                <label for="clinicDescriptionInput" class="form-label">وصف العيادة / الشعار النصي</label>
+                <input type="text" id="clinicDescriptionInput" class="form-input" placeholder="مثال: رعاية طبية متكاملة تثق بها">
+              </div>
+            </div>
+
+            <div class="grid gap-4" style="grid-template-columns: 1fr; margin-top: 0.5rem;">
+              <div class="form-group">
+                <label for="clinicLogoInput" class="form-label">رفع شعار العيادة (Logo)</label>
+                <div class="flex align-center gap-4">
+                  <div id="settings-logo-preview" class="widget-icon" style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.05); overflow: hidden;">
+                    <i class="fa-solid fa-image" style="font-size: 1.5rem; color: var(--text-muted);"></i>
+                  </div>
+                  <input type="file" id="clinicLogoInput" accept="image/*" class="form-input" style="flex-grow: 1; padding: 0.5rem;">
+                </div>
+              </div>
+            </div>
+
+            <div class="grid gap-4" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+              <div class="form-group">
+                <label for="clinicPhoneInput" class="form-label">رقم الهاتف</label>
+                <input type="tel" id="clinicPhoneInput" class="form-input" placeholder="مثال: +20123456789" required>
+              </div>
+              <div class="form-group">
+                <label for="clinicEmailInput" class="form-label">البريد الإلكتروني</label>
+                <input type="email" id="clinicEmailInput" class="form-input" placeholder="مثال: info@clinic.com" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="clinicAddressInput" class="form-label">عنوان العيادة بالتفصيل</label>
+              <input type="text" id="clinicAddressInput" class="form-input" placeholder="مثال: 12 شارع الزمالك، القاهرة" required>
+            </div>
+          </div>
+
+          <!-- Branding Colors Card -->
+          <div class="card flex flex-col gap-4">
+            <h3 style="font-size: 1.25rem; font-family: var(--font-display); border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 0.5rem;">
+              <i class="fa-solid fa-palette" style="color: var(--secondary-color); margin-right: 0.5rem;"></i> مظهر الهوية البصرية للعيادة
+            </h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">
+              قم باختيار الألوان البصرية لهوية عيادتك. سيتم تطبيق هذه الألوان تلقائياً في بوابة المرضى ولوحة الموظفين.
+            </p>
+            
+            <div class="grid gap-6" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+              <div class="form-group">
+                <label for="primaryColorInput" class="form-label">اللون الرئيسي للعيادة</label>
+                <div class="color-picker-wrapper">
+                  <input type="color" id="primaryColorInput" class="color-input" value="#4f46e5">
+                  <span id="primaryHexVal" style="font-family: monospace; font-size: 0.9rem;">#4f46e5</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="secondaryColorInput" class="form-label">اللون الفرعي (أزرار ونصوص مميزة)</label>
+                <div class="color-picker-wrapper">
+                  <input type="color" id="secondaryColorInput" class="color-input" value="#06b6d4">
+                  <span id="secondaryHexVal" style="font-family: monospace; font-size: 0.9rem;">#06b6d4</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Working Hours Card -->
+          <div class="card flex flex-col gap-4">
+            <h3 style="font-size: 1.25rem; font-family: var(--font-display); border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 0.5rem;">
+              <i class="fa-solid fa-business-time" style="color: var(--warning); margin-right: 0.5rem;"></i> أوقات وأيام العمل الرسمية
+            </h3>
+            
+            <div class="grid gap-4" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+              <div class="form-group">
+                <label for="workingDaysStart" class="form-label">بداية أيام العمل</label>
+                <select id="workingDaysStart" class="form-input" style="width: 100%;">
+                  <option value="Saturday">السبت</option>
+                  <option value="Sunday">الأحد</option>
+                  <option value="Monday">الإثنين</option>
+                  <option value="Tuesday">الثلاثاء</option>
+                  <option value="Wednesday">الأربعاء</option>
+                  <option value="Thursday">الخميس</option>
+                  <option value="Friday">الجمعة</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="workingDaysEnd" class="form-label">نهاية أيام العمل</label>
+                <select id="workingDaysEnd" class="form-input" style="width: 100%;">
+                  <option value="Thursday" selected>الخميس</option>
+                  <option value="Friday">الجمعة</option>
+                  <option value="Saturday">السبت</option>
+                  <option value="Sunday">الأحد</option>
+                  <option value="Monday">الإثنين</option>
+                  <option value="Tuesday">الثلاثاء</option>
+                  <option value="Wednesday">الأربعاء</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid gap-4" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+              <div class="form-group">
+                <label for="workingHoursStart" class="form-label">بداية وقت العمل اليومي</label>
+                <input type="time" id="workingHoursStart" class="form-input" value="09:00" required>
+              </div>
+
+              <div class="form-group">
+                <label for="workingHoursEnd" class="form-label">نهاية وقت العمل اليومي</label>
+                <input type="time" id="workingHoursEnd" class="form-input" value="17:00" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="timezoneSelect" class="form-label">المنطقة الزمنية</label>
+              <select id="timezoneSelect" class="form-input">
+                <option value="Africa/Cairo" selected>إفريقيا/القاهرة (EET)</option>
+                <option value="Asia/Riyadh">آسيا/الرياض (AST)</option>
+                <option value="Asia/Dubai">آسيا/دبي (GST)</option>
+                <option value="UTC">توقيت جرينتش (UTC)</option>
+              </select>
+            </div>
+          </div>
+          
+        </div>
+
+        <!-- Submit Panel -->
+        <div class="card flex justify-between align-center" style="padding: 1rem 1.5rem; background: rgba(15, 20, 34, 0.4);">
+          <span style="font-size: 0.85rem; color: var(--text-muted);">يرجى التأكد من البيانات قبل الحفظ.</span>
+          <button type="submit" class="btn btn-primary" style="gap: 0.5rem;">
+            <i class="fa-solid fa-floppy-disk"></i> حفظ الإعدادات
+          </button>
+        </div>
+
+      </form>
+    </main>
+  </div>
+
+  <script src="../js/common.js"></script>
+  <script src="../js/theme.js"></script>
+  <script src="../js/settings.js"></script>
+  
+  <script>
+    // Responsive sidebar toggler logic
+    document.getElementById("sidebar-toggle").addEventListener("click", () => {
+      document.getElementById("app-sidebar").classList.toggle("active");
+    });
+  </script>
+</body>
+</html>

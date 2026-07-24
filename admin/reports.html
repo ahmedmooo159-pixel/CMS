@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>التقارير والإحصائيات - لوحة التحكم</title>
+
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+  <style>
+    .reports-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .report-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+
+    .report-card-title {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .stat-big-num {
+      font-family: var(--font-display);
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--primary-color);
+      margin-bottom: .25rem;
+    }
+
+    .stat-subtext {
+      font-size: .85rem;
+      color: var(--text-muted);
+    }
+
+    .list-ranking {
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+      margin-top: 1rem;
+    }
+
+    .ranking-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .6rem .8rem;
+      background: var(--bg-input);
+      border-radius: 10px;
+      font-size: .88rem;
+    }
+
+    .ranking-name { font-weight: 600; }
+    .ranking-val { font-family: var(--font-display); font-weight: 700; color: var(--secondary-color); }
+
+    .status-bar { padding:.75rem 1rem;border-radius:8px;font-size:.9rem;margin-bottom:1.25rem;display:none; }
+    .status-bar.success { background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:var(--success); }
+    .status-bar.error   { background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:var(--danger); }
+  </style>
+</head>
+<body>
+
+  <header class="mobile-nav">
+    <div class="flex align-center gap-3">
+      <button id="sidebar-toggle" style="background:none;border:none;color:var(--text-primary);font-size:1.5rem;cursor:pointer;">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <h1 style="font-family:var(--font-display);font-size:1.25rem;">إدارة العيادة</h1>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    <aside id="app-sidebar" class="sidebar">
+      <div class="sidebar-logo">
+        <i class="fa-solid fa-laptop-medical" style="color:var(--primary-color);"></i>
+        <span>إدارة العيادة</span>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="sidebar-item"><a href="index.html"><i class="fa-solid fa-chart-line"></i> لوحة التحكم</a></li>
+        <li class="sidebar-item"><a href="settings.html"><i class="fa-solid fa-gears"></i> إعدادات العيادة</a></li>
+        <li class="sidebar-item"><a href="specialties.html"><i class="fa-solid fa-briefcase-medical"></i> التخصصات</a></li>
+        <li class="sidebar-item"><a href="doctors.html"><i class="fa-solid fa-user-doctor"></i> الأطباء</a></li>
+        <li class="sidebar-item"><a href="appointments.html"><i class="fa-solid fa-calendar-check"></i> الحجوزات</a></li>
+        <li class="sidebar-item"><a href="payments.html"><i class="fa-solid fa-file-invoice-dollar"></i> المدفوعات</a></li>
+        <li class="sidebar-item"><a href="reception.html"><i class="fa-solid fa-desktop"></i> شاشة الاستقبال</a></li>
+        <li class="sidebar-item"><a href="notifications.html"><i class="fa-solid fa-paper-plane"></i> التنبيهات والرسائل</a></li>
+        <li class="sidebar-item active"><a href="reports.html"><i class="fa-solid fa-chart-pie"></i> التقارير والإحصائيات</a></li>
+        <li class="sidebar-item" style="margin-top:auto;border-top:1px solid var(--border-color);padding-top:1rem;">
+          <a href="#" id="logout-btn" style="color:var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج</a>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="main-content">
+
+      <!-- Header -->
+      <div class="flex justify-between align-center flex-wrap gap-4" style="margin-bottom:2rem;">
+        <div>
+          <h2 style="font-size:2rem;font-family:var(--font-display);">التقارير والإحصائيات</h2>
+          <p style="color:var(--text-muted);font-size:.95rem;">تحليل أداء العيادة، الأطباء، والتخصصات الأكثر طلباً.</p>
+        </div>
+        <button id="export-full-report-btn" class="btn btn-primary">
+          <i class="fa-solid fa-file-csv"></i> تصدير التقرير الشامل (CSV)
+        </button>
+      </div>
+
+      <div id="reports-status" class="status-bar"></div>
+
+      <!-- Main Overview Cards -->
+      <div class="reports-grid">
+
+        <!-- Performance Summary Card -->
+        <div class="report-card">
+          <div class="report-card-title">
+            <span>نسبة إتمام الحجوزات</span>
+            <i class="fa-solid fa-chart-line" style="color:var(--success);"></i>
+          </div>
+          <div class="stat-big-num" id="stat-completion-rate">0%</div>
+          <div class="stat-subtext" id="stat-completion-sub">0 من أصل 0 حجز مكتمل</div>
+        </div>
+
+        <!-- Revenue Stats Card -->
+        <div class="report-card">
+          <div class="report-card-title">
+            <span>متوسط إيراد الكشف</span>
+            <i class="fa-solid fa-calculator" style="color:var(--secondary-color);"></i>
+          </div>
+          <div class="stat-big-num" id="stat-avg-ticket">0 ج.م</div>
+          <div class="stat-subtext">لكل حجز مؤكد أو مكتمل</div>
+        </div>
+
+        <!-- Top Doctor Card -->
+        <div class="report-card">
+          <div class="report-card-title">
+            <span>الأكثر حجزاً</span>
+            <i class="fa-solid fa-user-doctor" style="color:var(--primary-color);"></i>
+          </div>
+          <div class="stat-big-num" style="font-size:1.5rem;" id="stat-top-doctor">--</div>
+          <div class="stat-subtext" id="stat-top-doctor-count">-- حجز</div>
+        </div>
+
+      </div>
+
+      <!-- Detail Breakdowns -->
+      <div class="reports-grid">
+
+        <!-- Doctor Rankings -->
+        <div class="report-card">
+          <div class="report-card-title">
+            <span>الأطباء الأكثر طلباً</span>
+            <i class="fa-solid fa-trophy" style="color:var(--warning);"></i>
+          </div>
+          <div class="list-ranking" id="doctors-ranking-list">
+            <div style="color:var(--text-muted);font-size:.85rem;">جاري التحميل...</div>
+          </div>
+        </div>
+
+        <!-- Specialty Rankings -->
+        <div class="report-card">
+          <div class="report-card-title">
+            <span>التخصصات الأكثر طلباً</span>
+            <i class="fa-solid fa-briefcase-medical" style="color:var(--secondary-color);"></i>
+          </div>
+          <div class="list-ranking" id="specialties-ranking-list">
+            <div style="color:var(--text-muted);font-size:.85rem;">جاري التحميل...</div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <script src="../js/common.js"></script>
+  <script src="../js/theme.js"></script>
+  <script src="../js/reports.js"></script>
+  <script>
+    document.getElementById('sidebar-toggle').addEventListener('click', () =>
+      document.getElementById('app-sidebar').classList.toggle('active'));
+  </script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل دخول الموظفين - نظام إدارة العيادة</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/components.css">
+  
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Firebase SDK Compat -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+</head>
+<body class="flex align-center justify-center" style="padding: 1.5rem;">
+
+  <div class="card" style="width: 100%; max-width: 420px; padding: 2.5rem; background: linear-gradient(135deg, rgba(22, 28, 45, 0.9), rgba(15, 23, 42, 0.8));">
+    <div style="text-align: center; margin-bottom: 2.5rem;">
+      <div class="widget-icon" style="margin: 0 auto 1.25rem auto; width: 64px; height: 64px; font-size: 1.75rem;">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <h2 style="font-size: 1.75rem; margin-bottom: 0.5rem; font-family: var(--font-display);">دخول الموظفين</h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">الرجاء تسجيل الدخول لحساب المدير أو موظف الاستقبال</p>
+    </div>
+
+    <!-- Error/Alert Banner -->
+    <div id="login-error" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: var(--danger); font-size: 0.875rem; margin-bottom: 1.5rem;">
+      <i class="fa-solid fa-circle-exclamation" style="margin-left: 0.5rem;"></i>
+      <span id="error-message">بيانات الدخول غير صحيحة.</span>
+    </div>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="email" class="form-label">البريد الإلكتروني</label>
+        <div style="position: relative;">
+          <i class="fa-solid fa-envelope" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+          <input type="email" id="email" class="form-input" style="padding-right: 2.75rem; width: 100%;" placeholder="admin@clinic.com" required>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 2rem;">
+        <div class="flex justify-between align-center">
+          <label for="password" class="form-label">كلمة المرور</label>
+        </div>
+        <div style="position: relative;">
+          <i class="fa-solid fa-key" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+          <input type="password" id="password" class="form-input" style="padding-right: 2.75rem; width: 100%;" placeholder="••••••••" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; gap: 0.75rem;">
+        تسجيل الدخول <i class="fa-solid fa-arrow-left" style="transform: scaleX(-1);"></i>
+      </button>
+    </form>
+
+    <div style="margin-top: 2rem; text-align: center;">
+      <a href="../index.html" style="font-size: 0.875rem; color: var(--text-muted);"><i class="fa-solid fa-arrow-right"></i> العودة لبوابة الحجز</a>
+    </div>
+  </div>
+
+  <script src="../js/common.js"></script>
+  <script src="../js/auth.js"></script>
+</body>
+</html>

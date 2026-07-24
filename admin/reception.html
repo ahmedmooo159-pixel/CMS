@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>شاشة الاستقبال - لوحة التحكم</title>
+
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+
+  <style>
+    /* ---- Full-screen display mode ---- */
+    body.display-mode .sidebar,
+    body.display-mode .mobile-nav,
+    body.display-mode .main-content > *:not(#display-area) { display:none !important; }
+    body.display-mode .app-layout { display:block; }
+    body.display-mode .main-content { padding:0; }
+    body.display-mode #display-area { display:flex !important; }
+
+    /* ---- Live clock ---- */
+    .live-clock {
+      font-family: var(--font-display); font-size: 2.5rem; font-weight: 800;
+      color: var(--text-primary); letter-spacing: .08em;
+      text-align: center;
+    }
+    .live-date { text-align:center; color:var(--text-muted); font-size:.95rem; margin-top:.25rem; }
+
+    /* ---- Doctor filter tabs ---- */
+    .doc-tabs {
+      display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.75rem;
+    }
+    .doc-tab {
+      padding: .5rem 1.1rem; border-radius: 99px;
+      border: 1px solid var(--border-color); background: transparent;
+      cursor: pointer; font-size: .85rem; font-weight: 600; color: var(--text-muted);
+      transition: all .2s; display:flex; align-items:center; gap:.4rem;
+    }
+    .doc-tab:hover { border-color:var(--border-hover); color:var(--text-primary); }
+    .doc-tab.active {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      border-color: transparent; color: #fff;
+    }
+    .doc-tab .tab-count {
+      background: rgba(255,255,255,.2); border-radius:99px;
+      font-size:.72rem; padding:.05rem .45rem; font-weight:700;
+    }
+    .doc-tab:not(.active) .tab-count { background:var(--bg-input); color:var(--text-muted); }
+
+    /* ---- Queue Grid ---- */
+    .queue-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px,1fr));
+      gap: 1rem;
+    }
+
+    /* ---- Queue Item ---- */
+    .queue-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px; padding: 1.1rem 1.25rem;
+      display: flex; align-items: center; gap: 1rem;
+      transition: all .2s;
+      position: relative; overflow: hidden;
+    }
+
+    .queue-item.status-in_session {
+      border-color: var(--primary-color);
+      background: rgba(79,70,229,.06);
+    }
+    .queue-item.status-in_session::before {
+      content:'';
+      position:absolute; top:0; right:0;
+      width:3px; height:100%;
+      background:linear-gradient(180deg,var(--primary-color),var(--secondary-color));
+    }
+
+    .queue-item.status-arrived { border-color: var(--secondary-color); }
+    .queue-item.status-done    { opacity: .4; }
+
+    .queue-num {
+      width: 48px; height: 48px; border-radius: 12px; flex-shrink:0;
+      display: flex; align-items:center; justify-content:center;
+      font-family: var(--font-display); font-weight: 800; font-size: 1.35rem;
+      background: rgba(79,70,229,.1); color: var(--primary-color);
+    }
+
+    .queue-item.status-in_session .queue-num {
+      background: linear-gradient(135deg,var(--primary-color),var(--secondary-color));
+      color: #fff;
+    }
+
+    .queue-info { flex:1; min-width:0; }
+    .queue-name { font-weight:700; font-size:.95rem; }
+    .queue-phone { font-size:.78rem; color:var(--text-muted); margin-top:.15rem; }
+    .queue-time { font-size:.78rem; color:var(--text-muted); margin-top:.15rem; }
+
+    .queue-status-badge {
+      font-size:.72rem; font-weight:700;
+      padding:.2rem .6rem; border-radius:99px;
+    }
+    .badge-waiting    { background:rgba(245,158,11,.12);color:var(--warning);border:1px solid rgba(245,158,11,.25); }
+    .badge-arrived    { background:rgba(6,182,212,.12);color:var(--secondary-color);border:1px solid rgba(6,182,212,.25); }
+    .badge-in_session { background:rgba(79,70,229,.12);color:var(--primary-color);border:1px solid rgba(79,70,229,.25); }
+    .badge-done       { background:rgba(16,185,129,.12);color:var(--success);border:1px solid rgba(16,185,129,.25); }
+    .badge-cancelled  { background:rgba(239,68,68,.1);color:var(--danger);border:1px solid rgba(239,68,68,.2); }
+
+    .queue-actions { display:flex; flex-direction:column; gap:.35rem; flex-shrink:0; }
+    .q-btn {
+      padding:.3rem .55rem; font-size:.73rem; border-radius:7px;
+      border:1px solid var(--border-color); background:transparent;
+      color:var(--text-muted); cursor:pointer; white-space:nowrap; transition:all .18s;
+    }
+    .q-btn:hover { color:var(--text-primary); border-color:var(--border-hover); }
+    .q-btn.arrived:hover   { color:var(--secondary-color); border-color:var(--secondary-color); background:rgba(6,182,212,.07); }
+    .q-btn.session:hover   { color:var(--primary-color); border-color:var(--primary-color); background:rgba(79,70,229,.07); }
+    .q-btn.done:hover      { color:var(--success); border-color:var(--success); background:rgba(16,185,129,.07); }
+    .q-btn.cancel:hover    { color:var(--danger); border-color:var(--danger); background:rgba(239,68,68,.07); }
+
+    /* ---- TV Display Mode ---- */
+    #display-area {
+      display: none;
+      background: var(--bg-primary);
+      min-height: 100vh;
+      flex-direction: column;
+    }
+
+    .display-header {
+      background: rgba(22,28,45,.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1.25rem 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .display-title {
+      font-family: var(--font-display); font-size: 1.75rem; font-weight: 800;
+    }
+
+    .display-body { padding: 2rem; flex:1; }
+
+    .display-doctor-section { margin-bottom: 2rem; }
+    .display-doctor-name {
+      font-family: var(--font-display); font-size: 1.25rem; font-weight: 700;
+      margin-bottom: 1rem; padding-bottom: .5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .display-current-card {
+      background: linear-gradient(135deg,rgba(79,70,229,.15),rgba(6,182,212,.1));
+      border: 1px solid rgba(79,70,229,.35);
+      border-radius: 16px; padding: 1.5rem;
+      display: flex; align-items: center; gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .display-queue-num {
+      font-family: var(--font-display);
+      font-size: 4rem; font-weight: 900;
+      color: var(--primary-color); line-height:1;
+    }
+
+    .display-current-label {
+      font-size: .85rem; color: var(--text-muted); margin-bottom: .35rem;
+    }
+
+    .display-current-name {
+      font-family: var(--font-display); font-size: 1.5rem; font-weight: 800;
+    }
+
+    .display-waiting-list {
+      display: flex; gap: .75rem; flex-wrap: wrap;
+    }
+
+    .display-waiting-pill {
+      background: var(--bg-card); border: 1px solid var(--border-color);
+      border-radius: 10px; padding: .5rem .9rem;
+      font-size: .85rem; font-weight: 600;
+      display: flex; align-items:center; gap: .4rem;
+    }
+
+    /* ---- Status bar ---- */
+    .status-bar { padding:.75rem 1rem;border-radius:8px;font-size:.9rem;margin-bottom:1.25rem;display:none; }
+    .status-bar.success { background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:var(--success); }
+    .status-bar.error   { background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:var(--danger); }
+
+    /* ---- Refresh indicator ---- */
+    .refresh-dot {
+      width:8px;height:8px;border-radius:50%;
+      background:var(--success);
+      display:inline-block;
+      animation:pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    .empty-state { text-align:center;padding:3rem;color:var(--text-muted); }
+    .empty-state i { font-size:2.5rem;margin-bottom:.75rem;display:block;opacity:.35; }
+  </style>
+</head>
+<body>
+
+  <header class="mobile-nav">
+    <div class="flex align-center gap-3">
+      <button id="sidebar-toggle" style="background:none;border:none;color:var(--text-primary);font-size:1.5rem;cursor:pointer;">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <h1 style="font-family:var(--font-display);font-size:1.25rem;">إدارة العيادة</h1>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    <aside id="app-sidebar" class="sidebar">
+      <div class="sidebar-logo">
+        <i class="fa-solid fa-laptop-medical" style="color:var(--primary-color);"></i>
+        <span>إدارة العيادة</span>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="sidebar-item"><a href="index.html"><i class="fa-solid fa-chart-line"></i> لوحة التحكم</a></li>
+        <li class="sidebar-item"><a href="settings.html"><i class="fa-solid fa-gears"></i> إعدادات العيادة</a></li>
+        <li class="sidebar-item"><a href="specialties.html"><i class="fa-solid fa-briefcase-medical"></i> التخصصات</a></li>
+        <li class="sidebar-item"><a href="doctors.html"><i class="fa-solid fa-user-doctor"></i> الأطباء</a></li>
+        <li class="sidebar-item"><a href="appointments.html"><i class="fa-solid fa-calendar-check"></i> الحجوزات</a></li>
+        <li class="sidebar-item"><a href="payments.html"><i class="fa-solid fa-file-invoice-dollar"></i> المدفوعات</a></li>
+        <li class="sidebar-item active"><a href="reception.html"><i class="fa-solid fa-desktop"></i> شاشة الاستقبال</a></li>
+        <li class="sidebar-item" style="margin-top:auto;border-top:1px solid var(--border-color);padding-top:1rem;">
+          <a href="#" id="logout-btn" style="color:var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج</a>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="main-content">
+
+      <!-- Header -->
+      <div class="flex justify-between align-center flex-wrap gap-4" style="margin-bottom:2rem;">
+        <div>
+          <h2 style="font-size:2rem;font-family:var(--font-display);">
+            شاشة الاستقبال
+            <span class="refresh-dot" title="تحديث تلقائي كل 30 ثانية" style="margin-right:.5rem;"></span>
+          </h2>
+          <p style="color:var(--text-muted);font-size:.95rem;" id="today-label">مواعيد اليوم</p>
+        </div>
+        <div class="flex gap-3 flex-wrap">
+          <button id="refresh-btn" class="btn btn-secondary">
+            <i class="fa-solid fa-rotate-right"></i> تحديث
+          </button>
+          <button id="display-mode-btn" class="btn btn-primary">
+            <i class="fa-solid fa-display"></i> وضع العرض الكبير
+          </button>
+        </div>
+      </div>
+
+      <!-- Clock -->
+      <div class="card" style="margin-bottom:1.5rem;text-align:center;padding:1.25rem;">
+        <div class="live-clock" id="live-clock">00:00:00</div>
+        <div class="live-date" id="live-date"></div>
+      </div>
+
+      <div id="rec-status" class="status-bar"></div>
+
+      <!-- Doctor Tabs -->
+      <div class="doc-tabs" id="doc-tabs"></div>
+
+      <!-- Queue Grid -->
+      <div class="queue-grid" id="queue-grid">
+        <div class="empty-state" style="grid-column:1/-1;">
+          <i class="fa-solid fa-spinner fa-spin" style="color:var(--primary-color);opacity:1;"></i>
+          <p>جاري تحميل قائمة الانتظار...</p>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ---- TV Display Area (fullscreen mode) ---- -->
+  <div id="display-area">
+    <div class="display-header">
+      <div class="display-title" id="disp-clinic-name">
+        <i class="fa-solid fa-hospital" style="color:var(--primary-color);margin-left:.5rem;"></i>
+        العيادة
+      </div>
+      <div>
+        <div class="live-clock" id="disp-clock" style="font-size:2rem;text-align:left;"></div>
+        <div class="live-date" id="disp-date" style="text-align:left;font-size:.8rem;"></div>
+      </div>
+      <button onclick="exitDisplayMode()" class="btn btn-secondary" style="padding:.5rem 1rem;font-size:.85rem;">
+        <i class="fa-solid fa-xmark"></i> خروج
+      </button>
+    </div>
+    <div class="display-body" id="display-body">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+
+  <script src="../js/common.js"></script>
+  <script src="../js/theme.js"></script>
+  <script src="../js/reception.js"></script>
+  <script>
+    document.getElementById('sidebar-toggle').addEventListener('click', () =>
+      document.getElementById('app-sidebar').classList.toggle('active'));
+  </script>
+</body>
+</html>

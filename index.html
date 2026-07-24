@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بوابة حجز المواعيد بالعيادة</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Firebase SDK Compat -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+
+  <!-- Premium Header / Navbar -->
+  <header class="mobile-nav" style="display: flex; position: static; height: 5rem;">
+    <div class="flex align-center gap-3">
+      <div id="clinic-logo-container" class="widget-icon" style="background: rgba(255,255,255,0.05); border-radius: 50%;">
+        <i class="fa-solid fa-house-medical"></i>
+      </div>
+      <div>
+        <h1 id="clinic-name" style="font-family: var(--font-display); font-size: 1.25rem;">العيادة الطبية</h1>
+        <p id="clinic-tagline" style="font-size: 0.75rem; color: var(--text-muted);">رعاية طبية تثق بها</p>
+      </div>
+    </div>
+    
+    <nav class="flex align-center gap-6">
+      <a href="index.html" class="active" style="font-weight: 600;">حجز موعد</a>
+      <a href="admin/login.html" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;"><i class="fa-solid fa-user-gear"></i> دخول الموظفين</a>
+    </nav>
+  </header>
+
+  <main class="container" style="padding-top: 3rem; padding-bottom: 5rem;">
+    <!-- Hero Section -->
+    <section class="card" style="text-align: center; margin-bottom: 3rem; padding: 3rem 2rem; background: linear-gradient(135deg, rgba(22, 28, 45, 0.9), rgba(15, 23, 42, 0.8));">
+      <h2 style="font-size: 2.5rem; margin-bottom: 1rem; font-family: var(--font-display);">حجز مواعيد العيادة بسهولة</h2>
+      <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto 2rem auto; font-size: 1.1rem;">
+        اختر التخصص الطبي، ثم الطبيب المفضل لديك، واحجز موعدك مباشرة عبر الإنترنت في بضع خطوات بسيطة.
+      </p>
+      <div class="flex justify-center gap-4">
+        <a href="#specialties" class="btn btn-primary">احجز الآن <i class="fa-solid fa-arrow-left" style="margin-right: 0.5rem; transform: scaleX(-1);"></i></a>
+      </div>
+    </section>
+
+    <!-- Specialties Section -->
+    <section id="specialties">
+      <div class="flex justify-between align-center" style="margin-bottom: 2rem;">
+        <div>
+          <h3 style="font-size: 1.75rem; font-family: var(--font-display);">تخصصاتنا الطبية</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">اختر التخصص لعرض الأطباء المتاحين</p>
+        </div>
+      </div>
+
+      <!-- Grid list of specialties (Dynamically filled) -->
+      <div id="specialties-grid" class="grid gap-6" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+        <!-- Loading State -->
+        <div class="card flex flex-col align-center justify-center" style="min-height: 200px; text-align: center; grid-column: 1 / -1;">
+          <div style="font-size: 2rem; color: var(--primary-color); margin-bottom: 1rem;">
+            <i class="fa-solid fa-circle-notch fa-spin"></i>
+          </div>
+          <p style="color: var(--text-muted);">جاري تحميل إعدادات البوابة...</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Shared code and Firebase -->
+  <script src="js/common.js"></script>
+  <script src="js/theme.js"></script>
+  
+  <script>
+    // In Sprint 1, we just verify the initial rendering and mock connection
+    document.addEventListener("DOMContentLoaded", () => {
+      // Mock loading state completion if Firebase config is not fully set up yet
+      setTimeout(() => {
+        const grid = document.getElementById("specialties-grid");
+        grid.innerHTML = `
+          <div class="card flex flex-col align-center" style="text-align: center; cursor: pointer;">
+            <div class="widget-icon" style="margin-bottom: 1rem; width: 64px; height: 64px; font-size: 1.75rem;">
+              <i class="fa-solid fa-tooth"></i>
+            </div>
+            <h4 style="font-size: 1.2rem; margin-bottom: 0.5rem;">طب الأسنان</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">رعاية متكاملة للفم والأسنان وتجميل وزراعة الأسنان.</p>
+            <span style="font-weight: 600; color: var(--secondary-color);">السعر الأساسي: 200 ج.م</span>
+          </div>
+          <div class="card flex flex-col align-center" style="text-align: center; cursor: pointer;">
+            <div class="widget-icon" style="margin-bottom: 1rem; width: 64px; height: 64px; font-size: 1.75rem;">
+              <i class="fa-solid fa-stethoscope"></i>
+            </div>
+            <h4 style="font-size: 1.2rem; margin-bottom: 0.5rem;">الباطنة العامة</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">تشخيص وعلاج الأمراض الباطنية ومتابعة الحالات المزمنة.</p>
+            <span style="font-weight: 600; color: var(--secondary-color);">السعر الأساسي: 150 ج.م</span>
+          </div>
+          <div class="card flex flex-col align-center" style="text-align: center; cursor: pointer;">
+            <div class="widget-icon" style="margin-bottom: 1rem; width: 64px; height: 64px; font-size: 1.75rem;">
+              <i class="fa-solid fa-baby"></i>
+            </div>
+            <h4 style="font-size: 1.2rem; margin-bottom: 0.5rem;">طب الأطفال</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">متابعة نمو وصحة الأطفال وحديثي الولادة والتطعيمات.</p>
+            <span style="font-weight: 600; color: var(--secondary-color);">السعر الأساسي: 180 ج.م</span>
+          </div>
+        `;
+      }, 1000);
+    });
+  </script>
+</body>
+</html>

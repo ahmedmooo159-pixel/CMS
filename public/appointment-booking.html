@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>اختر موعدك - العيادة</title>
+  <meta name="description" content="اختر تاريخ ووقت موعدك مع الطبيب">
+
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+
+  <style>
+    .portal-nav {
+      position:sticky;top:0;z-index:50;
+      background:rgba(11,15,25,.92);backdrop-filter:blur(14px);
+      border-bottom:1px solid var(--border-color);
+      padding:.9rem 2rem;display:flex;align-items:center;justify-content:space-between;
+    }
+    .portal-logo{display:flex;align-items:center;gap:.75rem;font-family:var(--font-display);font-size:1.2rem;font-weight:700;color:var(--text-primary);}
+    .portal-logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--primary-color),var(--secondary-color));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;color:#fff;}
+
+    .breadcrumb{display:flex;align-items:center;gap:.5rem;font-size:.85rem;color:var(--text-muted);margin-bottom:1.25rem;}
+    .breadcrumb a{color:var(--text-muted);}
+    .breadcrumb a:hover{color:var(--primary-color);}
+    .breadcrumb i{font-size:.7rem;}
+
+    .booking-layout {
+      max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 3rem;
+      display: grid; grid-template-columns: 1fr 340px; gap: 1.75rem; align-items: start;
+    }
+
+    @media(max-width: 860px) {
+      .booking-layout { grid-template-columns: 1fr; }
+      .doctor-sidebar { order: -1; }
+    }
+
+    /* ---- Available Days Cards ---- */
+    .days-scroll-container {
+      display: flex;
+      gap: 0.75rem;
+      overflow-x: auto;
+      padding: 0.25rem 0.25rem 0.75rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--primary-color) transparent;
+    }
+    .days-scroll-container::-webkit-scrollbar {
+      height: 6px;
+    }
+    .days-scroll-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .days-scroll-container::-webkit-scrollbar-thumb {
+      background: var(--primary-color);
+      border-radius: 4px;
+    }
+
+    .day-card {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 0.85rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      min-width: 100px;
+      flex: 0 0 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      user-select: none;
+    }
+
+    .day-card:hover {
+      border-color: var(--primary-color);
+      background: rgba(79, 70, 229, 0.05);
+      transform: translateY(-2px);
+    }
+
+    .day-card.selected {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      border-color: transparent;
+      color: #fff;
+      font-weight: 700;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(79, 70, 229, 0.2);
+    }
+
+    .day-card-name {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .day-card.selected .day-card-name {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .day-card-date {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .day-card-slots {
+      font-size: 0.72rem;
+      color: var(--secondary-color);
+    }
+
+    .day-card.selected .day-card-slots {
+      color: #fff;
+      opacity: 0.9;
+    }
+
+    /* ---- Time Slots ---- */
+    .slots-section { margin-top: 1.5rem; }
+
+    .slots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px,1fr));
+      gap: .6rem;
+      margin-top: .75rem;
+    }
+
+    .slot-btn {
+      padding: .6rem .25rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-input);
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      font-weight: 600; font-size: .85rem;
+      cursor: pointer; text-align: center;
+      transition: all .18s;
+    }
+
+    .slot-btn:hover {
+      border-color: var(--primary-color);
+      background: rgba(79,70,229,.1);
+      color: var(--primary-color);
+    }
+
+    .slot-btn.selected {
+      background: linear-gradient(135deg,var(--primary-color),var(--secondary-color));
+      border-color: transparent; color: #fff;
+    }
+
+    .slot-btn.booked {
+      opacity: .35; cursor: not-allowed;
+      text-decoration: line-through;
+    }
+
+    /* ---- Doctor Sidebar ---- */
+    .doctor-sidebar { position: sticky; top: 80px; }
+
+    .doc-sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px; padding: 1.5rem;
+      display: flex; flex-direction: column; gap: 1rem;
+    }
+
+    .doc-sidebar-avatar {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: rgba(79,70,229,.1); border: 2px solid var(--border-color);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; color: var(--primary-color);
+      overflow: hidden; margin: 0 auto;
+    }
+    .doc-sidebar-avatar img { width:100%;height:100%;object-fit:cover; }
+
+    .doc-sidebar-name { text-align:center;font-family:var(--font-display);font-weight:700;font-size:1.15rem; }
+    .doc-sidebar-spec { text-align:center;color:var(--text-muted);font-size:.85rem; }
+
+    .summary-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: .6rem 0; border-bottom: 1px solid var(--border-color);
+      font-size: .9rem;
+    }
+
+    .summary-row:last-child { border-bottom: none; }
+    .summary-label { color: var(--text-muted); }
+    .summary-val { font-weight: 600; }
+
+    .proceed-btn {
+      width: 100%;
+      background: linear-gradient(135deg,var(--primary-color),var(--secondary-color));
+      color: #fff; border: none; border-radius: 10px;
+      padding: .85rem; font-family: var(--font-display);
+      font-weight: 700; font-size: 1rem; cursor: pointer;
+      transition: all .2s;
+      display: flex; align-items: center; justify-content: center; gap: .5rem;
+    }
+
+    .proceed-btn:hover { filter:brightness(1.1); transform:translateY(-1px); }
+    .proceed-btn:disabled { opacity:.45; cursor:not-allowed; transform:none; }
+
+    .empty-slots { text-align:center;color:var(--text-muted);padding:2rem;font-size:.9rem; }
+  </style>
+</head>
+<body>
+
+  <nav class="portal-nav">
+    <div class="portal-logo">
+      <div class="portal-logo-icon"><i class="fa-solid fa-hospital"></i></div>
+      <span id="clinic-name">العيادة</span>
+    </div>
+    <a id="back-btn" href="index.html" class="btn btn-secondary" style="padding:.5rem 1rem;font-size:.85rem;">
+      <i class="fa-solid fa-arrow-right"></i> الرجوع
+    </a>
+  </nav>
+
+  <!-- Breadcrumb -->
+  <div style="max-width:1100px;margin:0 auto;padding:1.5rem 1.5rem .5rem;">
+    <div class="breadcrumb">
+      <a href="index.html">الرئيسية</a>
+      <i class="fa-solid fa-chevron-left"></i>
+      <a id="bc-specialty-link" href="#">التخصص</a>
+      <i class="fa-solid fa-chevron-left"></i>
+      <span id="bc-doctor">الطبيب</span>
+    </div>
+    <h1 style="font-size:1.6rem;font-family:var(--font-display);margin-bottom:.3rem;">اختر التاريخ والوقت</h1>
+    <p style="color:var(--text-muted);font-size:.9rem;">أيام مؤشر عليها تحتوي على مواعيد متاحة</p>
+  </div>
+
+  <!-- Main Layout -->
+  <div class="booking-layout">
+
+    <!-- LEFT: Calendar + Slots -->
+    <div>
+      <div class="card">
+        <h3 style="font-family:var(--font-display);font-size:1.1rem;margin-bottom:1rem;">
+          <i class="fa-solid fa-calendar-days" style="color:var(--primary-color);margin-left:.4rem;"></i>
+          اختر يوم الحجز المتاح
+        </h3>
+        <div class="days-scroll-container" id="available-days-container">
+          <div class="empty-slots">جاري تحميل الأيام المتاحة...</div>
+        </div>
+      </div>
+
+      <!-- Time Slots -->
+      <div class="slots-section card" style="margin-top:1.25rem;">
+        <h3 style="font-family:var(--font-display);font-size:1.1rem;margin-bottom:.25rem;">
+          <i class="fa-solid fa-clock" style="color:var(--primary-color);margin-left:.4rem;"></i>
+          الأوقات المتاحة
+          <span id="selected-date-label" style="color:var(--text-muted);font-size:.85rem;font-weight:400;margin-right:.5rem;"></span>
+        </h3>
+        <div id="slots-grid" class="slots-grid">
+          <div class="empty-slots">اختر يوماً من التقويم لعرض المواعيد المتاحة</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Doctor Summary Sidebar -->
+    <div class="doctor-sidebar">
+      <div class="doc-sidebar-card">
+        <div class="doc-sidebar-avatar" id="sidebar-avatar">
+          <i class="fa-solid fa-user-doctor"></i>
+        </div>
+        <div>
+          <div class="doc-sidebar-name" id="sidebar-doc-name">جاري التحميل...</div>
+          <div class="doc-sidebar-spec" id="sidebar-doc-spec"></div>
+        </div>
+
+        <div>
+          <div class="summary-row">
+            <span class="summary-label">التاريخ</span>
+            <span class="summary-val" id="sum-date">-- لم يُحدَّد --</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">الوقت</span>
+            <span class="summary-val" id="sum-time">-- لم يُحدَّد --</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">سعر الكشف</span>
+            <span class="summary-val" id="sum-price" style="color:var(--secondary-color);">--</span>
+          </div>
+        </div>
+
+        <button id="proceed-btn" class="proceed-btn" disabled>
+          <i class="fa-solid fa-arrow-left"></i> متابعة الحجز
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/common.js"></script>
+  <script src="../js/theme.js"></script>
+  <script src="../js/appointment-booking.js"></script>
+</body>
+</html>
