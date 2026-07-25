@@ -11,7 +11,7 @@ const firebaseConfig = {
   measurementId: "G-VE4RQ1BR3Q"
 };
 
-let db, auth, storage;
+let db, auth;
 let isFirebaseConfigured = false;
 
 // Initialize Firebase
@@ -20,7 +20,6 @@ try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     auth = firebase.auth();
-    storage = firebase.storage();
     isFirebaseConfigured = true;
     console.log("Firebase initialized successfully with project: clinc-mangment-system");
   } else {
@@ -109,6 +108,5 @@ function requireAdmin(onUser) {
 // Export global tools to window object
 window.db                  = db;
 window.auth                = auth;
-window.storage             = storage;
 window.isFirebaseConfigured = isFirebaseConfigured;
 window.requireAdmin        = requireAdmin;
