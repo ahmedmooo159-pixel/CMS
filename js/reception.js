@@ -29,7 +29,7 @@ const RECEPTION_STATUSES = {
 document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('logout-btn').addEventListener('click', async e => {
     e.preventDefault();
-    try { await window.auth.signOut(); window.location.href = 'login.html'; } catch(_) {}
+    try { window.adminSignOut(); } catch(_) {}
   });
 
   document.getElementById('refresh-btn').addEventListener('click', loadQueue);

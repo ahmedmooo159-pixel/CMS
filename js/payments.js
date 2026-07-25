@@ -27,7 +27,7 @@ const filterDate  = document.getElementById('filter-date');
 document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('logout-btn').addEventListener('click', async e => {
     e.preventDefault();
-    try { await window.auth.signOut(); window.location.href = 'login.html'; } catch(err) {}
+    try { window.adminSignOut(); } catch(err) {}
   });
 
   document.getElementById('close-receipt-btn').addEventListener('click', () =>

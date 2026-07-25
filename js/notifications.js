@@ -17,7 +17,7 @@ const filterEl = document.getElementById('filter-date-notify');
 document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('logout-btn')?.addEventListener('click', async e => {
     e.preventDefault();
-    try { await window.auth.signOut(); window.location.href = 'login.html'; } catch(_) {}
+    try { window.adminSignOut(); } catch(_) {}
   });
 
   searchEl?.addEventListener('input', renderTable);

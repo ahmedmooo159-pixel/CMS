@@ -89,18 +89,26 @@ function setupMockFirebase() {
 const BASE_PATH = window.location.hostname.includes("github.io") ? "/CMS" : "";
 window.BASE_PATH = BASE_PATH;
 
-// Utility to check if user is admin
-function requireAdmin() {
-  auth.onAuthStateChanged((user) => {
-    if (!user) {
-      window.location.href = `${BASE_PATH}/admin/login.html`;
-    }
-  });
+// ---- requireAdmin: guard for admin pages ----
+// Delegates to checkAuth() defined in auth.js (must be loaded before)
+function requireAdmin(onUser) {
+  if (typeof window.checkAuth === 'function') {
+    window.checkAuth(onUser);
+  } else {
+    // Fallback if auth.js hasn't loaded yet: use onAuthStateChanged directly
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        window.location.href = `${BASE_PATH}/admin/login.html`;
+      } else if (typeof onUser === 'function') {
+        onUser(user);
+      }
+    });
+  }
 }
 
 // Export global tools to window object
-window.db = db;
-window.auth = auth;
-window.storage = storage;
+window.db                  = db;
+window.auth                = auth;
+window.storage             = storage;
 window.isFirebaseConfigured = isFirebaseConfigured;
-window.requireAdmin = requireAdmin;
+window.requireAdmin        = requireAdmin;

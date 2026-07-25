@@ -38,7 +38,7 @@ const PAY_LABELS = {
 document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('logout-btn').addEventListener('click', async e => {
     e.preventDefault();
-    try { await window.auth.signOut(); window.location.href = 'login.html'; } catch(err) {}
+    try { window.adminSignOut(); } catch(err) {}
   });
 
   document.getElementById('close-detail-btn').addEventListener('click', closeDetailModal);
