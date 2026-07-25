@@ -1,19 +1,21 @@
 /* Premium UI Components styling */
 
-/* Card & Glassmorphism */
+/* Card & Glassmorphism with 3D Depth */
 .card {
   background: var(--bg-card);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 1.5rem;
-  box-shadow: var(--shadow-lg);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+  box-shadow: var(--shadow-3d);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
 }
 
 .card:hover {
   border-color: var(--border-hover);
-  transform: translateY(-2px);
+  transform: translateY(-4px) scale(1.005);
+  box-shadow: var(--shadow-3d-hover);
 }
 
 /* Custom interactive inputs */
@@ -26,25 +28,26 @@
 
 .form-label {
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-muted);
 }
 
 .form-input {
   background-color: var(--bg-input);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--text-primary);
   padding: 0.75rem 1rem;
   font-family: var(--font-body);
   font-size: 0.95rem;
   outline: none;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .form-input:focus {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25), inset 0 1px 2px rgba(0,0,0,0.1);
 }
 
 /* Color Picker Row override */
@@ -74,53 +77,62 @@
   border-radius: 50%;
 }
 
-/* Premium Buttons */
+/* Premium 3D Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   font-family: var(--font-display);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.95rem;
   padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  border-radius: 10px;
   border: none;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
+  position: relative;
+}
+
+.btn:active {
+  transform: translateY(1px) scale(0.98);
 }
 
 .btn-primary {
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   color: var(--text-inverse);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.3);
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(99, 102, 241, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.4);
   filter: brightness(1.1);
 }
 
 .btn-secondary {
-  background-color: transparent;
+  background-color: var(--bg-input);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.05);
 }
 
 .btn-secondary:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(255, 255, 255, 0.08);
   border-color: var(--border-hover);
+  transform: translateY(-1px);
 }
 
 .btn-danger {
-  background-color: var(--danger);
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: var(--text-inverse);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .btn-danger:hover {
-  filter: brightness(0.9);
+  filter: brightness(1.1);
+  transform: translateY(-1px);
 }
 
 /* Badges for status indicators */

@@ -123,9 +123,15 @@
 
     .slots-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(90px,1fr));
-      gap: .6rem;
-      margin-top: .75rem;
+      grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+      gap: 0.65rem;
+      margin-top: 0.75rem;
+      max-height: 280px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 0.25rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--primary-color) transparent;
     }
 
     .slot-btn {

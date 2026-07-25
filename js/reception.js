@@ -206,39 +206,45 @@ function renderQueue() {
 function renderQueueItem(a) {
   const patient = allPatients.find(p => p.id === a.patientId) || {};
   const doctor  = allDoctors.find(d => d.id === a.doctorId)   || {};
-  const name    = `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'مريض';
+  const name    = a.patientName || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'مريض بدون اسم';
+  const phone   = a.patientPhone || patient.phone || '';
   const status  = a.status || 'pending';
   const stConf  = RECEPTION_STATUSES[status] || RECEPTION_STATUSES.pending;
+  const isPaid  = a.paymentStatus === 'paid';
 
   // Build action buttons
   let actions = '';
   if (status === 'pending' || status === 'confirmed') {
-    actions += `<button class="q-btn arrived" onclick="setStatus('${a.id}','arrived')"><i class="fa-solid fa-walking"></i> وصل</button>`;
+    actions += `<button class="q-btn arrived" onclick="setStatus('${a.id}','arrived')"><i class="fa-solid fa-walking"></i> تأكيد الوصول</button>`;
   }
   if (status === 'arrived') {
-    actions += `<button class="q-btn session" onclick="setStatus('${a.id}','in_session')"><i class="fa-solid fa-stethoscope"></i> داخل</button>`;
+    actions += `<button class="q-btn session" onclick="setStatus('${a.id}','in_session')"><i class="fa-solid fa-stethoscope"></i> أدخل للدكتور</button>`;
   }
   if (status === 'in_session') {
-    actions += `<button class="q-btn done" onclick="setStatus('${a.id}','done')"><i class="fa-solid fa-check"></i> انتهى</button>`;
+    actions += `<button class="q-btn done" onclick="setStatus('${a.id}','done')"><i class="fa-solid fa-check"></i> إنهاء الكشف</button>`;
   }
   if (!['done','cancelled'].includes(status)) {
-    actions += `<button class="q-btn cancel" onclick="setStatus('${a.id}','cancelled')"><i class="fa-solid fa-ban"></i></button>`;
+    actions += `<button class="q-btn cancel" onclick="setStatus('${a.id}','cancelled')"><i class="fa-solid fa-ban"></i> إلغاء</button>`;
   }
 
   return `
     <div class="queue-item status-${status}" id="qi-${a.id}">
-      <div class="queue-num">${a.queueNumber || '–'}</div>
+      <div class="queue-num" title="رقم الدور">#${a.queueNumber || '–'}</div>
       <div class="queue-info">
         <div class="queue-name">${escHtml(name)}</div>
-        ${patient.phone ? `<div class="queue-phone"><i class="fa-solid fa-phone" style="font-size:.7rem;margin-left:.3rem;"></i>${escHtml(patient.phone)}</div>` : ''}
+        ${phone ? `<div class="queue-phone"><i class="fa-solid fa-phone" style="font-size:.7rem;margin-left:.3rem;"></i>${escHtml(phone)}</div>` : ''}
         <div class="queue-time">
           <i class="fa-solid fa-clock" style="font-size:.7rem;margin-left:.3rem;"></i>${a.appointmentTime || '--'}
           ${activeDocFilter === 'all' ? `&nbsp;·&nbsp;<i class="fa-solid fa-user-doctor" style="font-size:.7rem;margin-left:.2rem;"></i>${escHtml(doctor.name || '')}` : ''}
         </div>
-        <div style="margin-top:.4rem;">
+        <div style="margin-top:.4rem; display:flex; gap:.3rem; flex-wrap:wrap; align-items:center;">
           <span class="queue-status-badge ${stConf.badge}">
             <i class="fa-solid ${stConf.icon}" style="font-size:.65rem;margin-left:.25rem;"></i>
             ${stConf.label}
+          </span>
+          <span class="queue-status-badge ${isPaid ? 'badge-done' : 'badge-waiting'}" style="font-size:.65rem;">
+            <i class="fa-solid ${isPaid ? 'fa-money-bill-check' : 'fa-hand-holding-dollar'}" style="margin-left:.2rem;"></i>
+            ${isPaid ? 'مدفوع' : 'غير مدفوع (نقداً)'}
           </span>
         </div>
       </div>
@@ -256,19 +262,32 @@ async function setStatus(id, newStatus) {
     // Map reception status → appointment status for Firestore
     const apptStatus = ['arrived','in_session'].includes(newStatus) ? 'confirmed' : newStatus;
 
+    // Automatic Payment Confirmation:
+    // When marked arrived, in_session, or done, auto-mark cash appointments as paid!
+    const currentAppt = appointments.find(a => a.id === id);
+    let shouldAutoPay = false;
+    if (['arrived', 'in_session', 'done'].includes(newStatus)) {
+      if (!currentAppt || currentAppt.paymentStatus !== 'paid') {
+        shouldAutoPay = true;
+      }
+    }
+
+    const updateFields = {
+      status: apptStatus,
+      receptionStatus: newStatus,
+      updatedAt: now
+    };
+    if (shouldAutoPay) {
+      updateFields.paymentStatus = 'paid';
+    }
+
     if (window.isFirebaseConfigured) {
-      await db.collection('appointments').doc(id).update({
-        status: apptStatus,
-        receptionStatus: newStatus,
-        updatedAt: now
-      });
+      await db.collection('appointments').doc(id).update(updateFields);
     } else {
       const appts = JSON.parse(localStorage.getItem('mock_appointments') || '[]');
       const idx   = appts.findIndex(a => a.id === id);
       if (idx !== -1) {
-        appts[idx].status          = apptStatus;
-        appts[idx].receptionStatus = newStatus;
-        appts[idx].updatedAt       = now;
+        Object.assign(appts[idx], updateFields);
       }
       localStorage.setItem('mock_appointments', JSON.stringify(appts));
     }
@@ -276,8 +295,7 @@ async function setStatus(id, newStatus) {
     // Update local state
     const idx2 = appointments.findIndex(a => a.id === id);
     if (idx2 !== -1) {
-      appointments[idx2].status          = newStatus;
-      appointments[idx2].receptionStatus = newStatus;
+      Object.assign(appointments[idx2], updateFields);
     }
 
     renderTabs();

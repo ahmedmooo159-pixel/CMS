@@ -198,9 +198,12 @@ async function saveAppointment(patient, notes, paymentMethod, paymentStatus, pay
   }
 
   // 2. Save appointment
+  const patientFullName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim();
   const appointment = {
     clinicId:        'settings',
     patientId,
+    patientName:     patientFullName,
+    patientPhone:    patient.phone || '',
     doctorId,
     specialtyId,
     slotId,
