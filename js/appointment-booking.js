@@ -184,52 +184,55 @@ function generateSlotsOnTheFly(doc, daysAhead = 30) {
 }
 
 // =========================================================
-// Render Available Days Cards
+// Render Available Days Select
 // =========================================================
 function renderAvailableDays() {
-  const container = document.getElementById('available-days-container');
+  const selectElem = document.getElementById('available-days-select');
+  if (!selectElem) return;
   const availableDates = Object.keys(slotsByDate).sort();
 
   if (availableDates.length === 0) {
-    container.innerHTML = `
-      <div class="empty-slots" style="width: 100%;">
-        <i class="fa-solid fa-calendar-xmark" style="font-size: 2.5rem; margin-bottom: 0.75rem; color: var(--text-muted); display: block;"></i>
-        لا توجد أيام متاحة للحجز حالياً لهذا الطبيب
-      </div>`;
+    selectElem.innerHTML = `<option value="">لا توجد أيام متاحة للحجز حالياً</option>`;
+    selectElem.disabled = true;
     return;
   }
 
-  container.innerHTML = availableDates.map(dateStr => {
+  selectElem.disabled = false;
+  
+  let optionsHtml = `<option value="">-- اختر يوم الحجز --</option>`;
+  optionsHtml += availableDates.map(dateStr => {
     const slots = slotsByDate[dateStr] || [];
     const dateObj = new Date(dateStr + 'T00:00:00');
     
     // Format weekday (e.g., الإثنين)
     const dayName = dateObj.toLocaleDateString('ar-EG', { weekday: 'long' });
     // Format day number and month name (e.g., 24 يوليو)
-    const formattedDate = dateObj.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
+    const formattedDate = dateObj.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
     
-    const isSelected = dateStr === selectedDate;
-    const cls = isSelected ? 'day-card selected' : 'day-card';
+    const isSelected = dateStr === selectedDate ? 'selected' : '';
 
-    return `
-      <div class="${cls}" data-date="${dateStr}" onclick="onDayClick(this)">
-        <span class="day-card-name">${dayName}</span>
-        <span class="day-card-date">${formattedDate}</span>
-        <span class="day-card-slots">${slots.length} مواعيد</span>
-      </div>
-    `;
+    return `<option value="${dateStr}" ${isSelected}>${dayName}، ${formattedDate} (${slots.length} مواعيد)</option>`;
   }).join('');
+
+  selectElem.innerHTML = optionsHtml;
 }
 
 // =========================================================
-// Day Click
+// Day Select Change
 // =========================================================
-function onDayClick(el) {
-  const date = el.dataset.date;
+function onDaySelectChange(el) {
+  const date = el.value;
   selectedDate = date;
   selectedSlot = null;
-
-  renderAvailableDays();
+  
+  if (!date) {
+    document.getElementById('selected-date-label').textContent = '';
+    document.getElementById('sum-date').textContent = '-- لم يُحدَّد --';
+    document.getElementById('sum-time').textContent = '-- لم يُحدَّد --';
+    document.getElementById('proceed-btn').disabled = true;
+    document.getElementById('slots-grid').innerHTML = '<div class="empty-slots">اختر يوماً من التقويم لعرض المواعيد المتاحة</div>';
+    return;
+  }
 
   // Update label
   const dateObj = new Date(date + 'T00:00:00');
