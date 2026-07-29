@@ -85,11 +85,11 @@ body {
     radial-gradient(circle at 50% 85%, rgba(139, 92, 246, 0.12) 0px, transparent 50%);
   background-attachment: fixed;
   transition: background-color 0.3s ease, color 0.3s ease;
-}
+
   background-attachment: fixed;
   transition: background-color 0.3s ease, color 0.3s ease;
-}
 
+}
 /* Selection styling */
 ::selection {
   background-color: var(--primary-color);

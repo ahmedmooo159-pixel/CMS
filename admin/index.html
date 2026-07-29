@@ -1,29 +1,32 @@
 ﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>لوحة التحكم - نظام إدارة العيادة</title>
-  
+
   <!-- CSS -->
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="../css/layout.css">
   <link rel="stylesheet" href="../css/components.css">
-  
+
   <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+
   <!-- Firebase SDK Compat -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 </head>
+
 <body>
 
   <!-- Mobile Nav Header -->
   <header class="mobile-nav">
     <div class="flex align-center gap-3">
-      <button id="sidebar-toggle" style="background: none; border: none; color: var(--text-primary); font-size: 1.5rem; cursor: pointer;">
+      <button id="sidebar-toggle"
+        style="background: none; border: none; color: var(--text-primary); font-size: 1.5rem; cursor: pointer;">
         <i class="fa-solid fa-bars"></i>
       </button>
       <h1 style="font-family: var(--font-display); font-size: 1.25rem;">إدارة العيادة</h1>
@@ -43,7 +46,7 @@
         <img src="../logo_sm.png" alt="Logo" style="max-height: 38px; width: auto; object-fit: contain;">
         <span>إدارة العيادة</span>
       </div>
-      
+
       <ul class="sidebar-menu">
         <li class="sidebar-item active">
           <a href="index.html"><i class="fa-solid fa-chart-line"></i> لوحة التحكم</a>
@@ -66,8 +69,13 @@
         <li class="sidebar-item">
           <a href="reception.html"><i class="fa-solid fa-desktop"></i> شاشة الاستقبال</a>
         </li>
-        <li class="sidebar-item" style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 1rem;">
-          <a href="#" id="logout-btn" style="color: var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج</a>
+        <li class="sidebar-item">
+          <a href="notifications.html"><i class="fa-solid fa-desktop"></i> الرسائل والتواصل</a>
+        </li>
+        <li class="sidebar-item"
+          style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <a href="#" id="logout-btn" style="color: var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> تسجيل
+            الخروج</a>
         </li>
       </ul>
     </aside>
@@ -140,9 +148,10 @@
         <div class="card flex flex-col gap-4">
           <div class="flex justify-between align-center">
             <h3 style="font-size: 1.25rem; font-family: var(--font-display);">أحدث الحجوزات</h3>
-            <a href="appointments.html" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">عرض الكل</a>
+            <a href="appointments.html" class="btn btn-secondary"
+              style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">عرض الكل</a>
           </div>
-          
+
           <div class="table-container">
             <table class="table">
               <thead>
@@ -170,18 +179,21 @@
           <div class="card">
             <h3 style="font-size: 1.25rem; font-family: var(--font-display); margin-bottom: 1rem;">إجراءات سريعة</h3>
             <div class="flex flex-col gap-3">
-              <a href="appointments.html?action=new" class="btn btn-primary" style="justify-content: flex-start; padding: 0.65rem 1rem;">
+              <a href="appointments.html?action=new" class="btn btn-primary"
+                style="justify-content: flex-start; padding: 0.65rem 1rem;">
                 <i class="fa-solid fa-plus"></i> حجز موعد جديد
               </a>
-              <a href="doctors.html?action=new" class="btn btn-secondary" style="justify-content: flex-start; padding: 0.65rem 1rem;">
+              <a href="doctors.html?action=new" class="btn btn-secondary"
+                style="justify-content: flex-start; padding: 0.65rem 1rem;">
                 <i class="fa-solid fa-user-doctor"></i> إضافة طبيب جديد
               </a>
-              <a href="specialties.html?action=new" class="btn btn-secondary" style="justify-content: flex-start; padding: 0.65rem 1rem;">
+              <a href="specialties.html?action=new" class="btn btn-secondary"
+                style="justify-content: flex-start; padding: 0.65rem 1rem;">
                 <i class="fa-solid fa-briefcase-medical"></i> إضافة تخصص طبي
               </a>
             </div>
           </div>
-          
+
           <div class="card">
             <h3 style="font-size: 1.25rem; font-family: var(--font-display); margin-bottom: 1rem;">حالة النظام</h3>
             <div class="flex justify-between align-center" style="font-size: 0.9rem; padding: 0.5rem 0;">
@@ -195,10 +207,11 @@
           </div>
         </div>
       </div>
-    <footer style="margin-top: 3rem; padding: 1.5rem 0; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
-  <div>Â© 2026 Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø¹ÙŠØ§Ø¯Ø©. Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ‚ Ù…Ø­ÙÙˆØ¸Ø©.</div>
-  <img src="../logo_sm.png" alt="Logo" style="max-height: 32px; width: auto; object-fit: contain;">
-</footer>
+      <footer
+        style="margin-top: 3rem; padding: 1.5rem 0; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
+        <div>Â© 2026 Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø¹ÙŠØ§Ø¯Ø©. Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ‚ Ù…Ø­ÙÙˆØ¸Ø©.</div>
+        <img src="../logo_sm.png" alt="Logo" style="max-height: 32px; width: auto; object-fit: contain;">
+      </footer>
     </main>
   </div>
 
@@ -208,7 +221,7 @@
   <script src="../js/auth.js"></script>
   <script src="../js/theme.js"></script>
   <script src="../js/dashboard.js"></script>
-  
+
   <script>
     // Responsive sidebar toggler with overlay
     const _sidebar = document.getElementById("app-sidebar");
@@ -224,4 +237,5 @@
     });
   </script>
 </body>
+
 </html>
