@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
@@ -24,8 +24,9 @@
       background: rgba(11,15,25,.92);
       backdrop-filter: blur(14px);
       border-bottom: 1px solid var(--border-color);
-      padding: .9rem 2rem;
+      padding: .9rem 1.25rem;
       display: flex; align-items: center; justify-content: space-between;
+      gap: .75rem;
     }
 
     .portal-logo {
@@ -44,7 +45,7 @@
 
     /* ---- Hero ---- */
     .portal-hero {
-      padding: 5rem 2rem 4rem;
+      padding: 3.5rem 1.25rem 3rem;
       text-align: center;
       background: radial-gradient(ellipse at 50% 0%, rgba(79,70,229,.18) 0%, transparent 60%);
     }
@@ -70,19 +71,52 @@
     }
 
     .hero-steps {
-      display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;
-      margin-bottom: 3rem;
+      display: flex; justify-content: center; gap: .75rem; flex-wrap: wrap;
+      margin-bottom: 2.5rem;
+    }
+
+    .hero-floating-logo {
+      position: absolute;
+      top: 50%; right: 10%;
+      transform: translateY(-50%) rotate(5deg);
+      width: clamp(70px, 15vw, 130px);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      z-index: 10;
+      animation: floatLogo 6s ease-in-out infinite;
+    }
+
+    @keyframes floatLogo {
+      0% { transform: translateY(-50%) rotate(5deg); }
+      50% { transform: translateY(-55%) rotate(10deg); }
+      100% { transform: translateY(-50%) rotate(5deg); }
     }
 
     .step-pill {
       display: flex; align-items: center; gap: .5rem;
       background: rgba(255,255,255,.04);
       border: 1px solid var(--border-color);
-      border-radius: 99px; padding: .45rem 1rem;
-      font-size: .85rem; font-weight: 500;
+      border-radius: 99px; padding: .4rem .85rem;
+      font-size: .82rem; font-weight: 500;
     }
 
     .step-pill i { color: var(--primary-color); }
+
+    /* ---- Mobile responsive ---- */
+    @media (max-width: 480px) {
+      .portal-hero { padding: 2.5rem 1rem 2rem; }
+      .hero-floating-logo { top: 20px; right: 20px; transform: rotate(10deg); width: 60px; animation: none; }
+      .stats-bar { padding: 1rem; gap: .75rem; }
+      .stat-num { font-size: 1.4rem; }
+      .specialties-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+      .specialty-card { padding: 1.1rem .75rem; }
+      .section { padding: 2rem 1rem; }
+      .portal-logo span { font-size: 1rem; }
+    }
+    @media (max-width: 360px) {
+      .specialties-grid { grid-template-columns: 1fr; }
+      .step-pill { font-size: .75rem; }
+    }
 
     /* ---- Specialties Section ---- */
     .section {
@@ -176,7 +210,8 @@
   </nav>
 
   <!-- Hero -->
-  <section class="portal-hero">
+  <section class="portal-hero" style="position: relative; overflow: hidden;">
+    <img src="assets/logo.png" alt="AMCODE" class="hero-floating-logo">
     <h1 class="hero-title">احجز موعدك<br><span id="hero-clinic-name">مع أفضل الأطباء</span></h1>
     <p class="hero-subtitle" id="clinic-tagline">اختر تخصصك، حدد طبيبك، واحجز موعدك في ثوانٍ — بدون تسجيل.</p>
 
@@ -218,8 +253,13 @@
   </section>
 
   <!-- Scripts -->
+  <script src="../js/env.js"></script>
   <script src="../js/common.js"></script>
   <script src="../js/theme.js"></script>
   <script src="../js/portal.js"></script>
+<footer style="margin-top: 3rem; padding: 1.5rem 0; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
+  <div>Â© 2026 Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø¹ÙŠØ§Ø¯Ø©. Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ‚ Ù…Ø­ÙÙˆØ¸Ø©.</div>
+  <img src="../logo_sm.png" alt="Logo" style="max-height: 32px; width: auto; object-fit: contain;">
+</footer>
 </body>
 </html>

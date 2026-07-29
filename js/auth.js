@@ -32,31 +32,14 @@ function persistUser(user) {
   }
 }
 
-// =========================================================
-// 2. checkAuth() – called by each admin page to guard access
-//    Shows page immediately if cached user exists,
-//    then re-verifies with Firebase silently.
-// =========================================================
 window.checkAuth = function (onUser) {
-  const cached = getCachedUser();
-
-  // Fast-path: if we have a cached user, don't flash redirect
-  if (!cached) {
-    // No cached user → go to login immediately
-    window.location.href = LOGIN_PAGE;
-    return;
-  }
-
-  // Cached user found → let the page render, verify in background
-  if (typeof onUser === 'function') onUser(cached);
-
-  // Background verification with Firebase
+  // Wait for Firebase to verify the user state
   window.auth.onAuthStateChanged(user => {
     if (user) {
       persistUser(user);                              // refresh cache
-      if (typeof onUser === 'function') onUser(user); // update UI if needed
+      if (typeof onUser === 'function') onUser(user); // update UI
     } else {
-      // Firebase says session expired → clear cache and redirect
+      // Firebase says no session → clear cache and redirect
       persistUser(null);
       window.location.href = LOGIN_PAGE;
     }

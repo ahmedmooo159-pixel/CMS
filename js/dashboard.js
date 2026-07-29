@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("logout-btn").addEventListener("click", async (e) => {
     e.preventDefault();
     try {
-      await window.auth.signOut();
+      await window.adminSignOut();
       window.location.href = `${window.BASE_PATH || ''}/admin/login.html`;
     } catch (err) {
       console.error("Sign out error:", err);
@@ -145,9 +145,9 @@ function renderAppointments(appointments, container) {
 
     return `
       <tr>
-        <td style="font-weight: 500;">${patientName}</td>
-        <td>${doctorName}</td>
-        <td>${time}</td>
+        <td style="font-weight: 500;">${window.escHtml(patientName)}</td>
+        <td>${window.escHtml(doctorName)}</td>
+        <td>${window.escHtml(time)}</td>
         <td><span class="badge badge-${status}">${displayStatus}</span></td>
         <td><span class="badge badge-${paymentStatus === 'paid' ? 'completed' : 'pending'}">${displayPayment}</span></td>
       </tr>

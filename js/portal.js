@@ -26,7 +26,7 @@ async function loadClinicBranding() {
     }
     if (settings.logo) {
       document.getElementById('nav-logo-container').innerHTML =
-        `<img src="${settings.logo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`;
+        (window.isValidImageUrl(settings.logo) ? `<img src="${settings.logo}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">` : '');
     }
   } catch (err) {
     console.error('loadClinicBranding error:', err);
@@ -77,7 +77,7 @@ async function loadPortalData() {
       <a href="${pagePrefix}doctors-list.html?specialtyId=${encodeURIComponent(s.id)}&specialtyName=${encodeURIComponent(s.name)}"
          class="specialty-card">
         <div class="specialty-card-icon">
-          ${s.icon ? `<img src="${s.icon}" alt="${s.name}">` : `<i class="fa-solid fa-stethoscope"></i>`}
+          ${s.icon && window.isValidImageUrl(s.icon) ? `<img src="${s.icon}" alt="${window.escHtml(s.name)}">` : `<i class="fa-solid fa-stethoscope"></i>`}
         </div>
         <div class="specialty-card-name">${escapeHtml(s.name)}</div>
         ${s.basePrice ? `<div class="specialty-card-price">يبدأ من ${s.basePrice} ج.م</div>` : ''}

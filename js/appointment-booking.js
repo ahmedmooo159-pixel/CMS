@@ -14,6 +14,8 @@ let allSlots      = [];       // all available (unbooked) slots for this doctor
 let slotsByDate   = {};       // { "YYYY-MM-DD": [slot, ...] }
 let selectedDate  = null;     // "YYYY-MM-DD"
 let selectedSlot  = null;     // slot object
+let currentWeekIndex = 0;
+let availableDates = [];
 
 // =========================================================
 // Init
@@ -67,9 +69,9 @@ async function loadDoctor() {
       document.getElementById('sidebar-doc-spec').textContent = specialtyName;
       document.title = `${doctor.name} - احجز موعدك`;
 
-      if (doctor.photo) {
+      if (doctor.photo && window.isValidImageUrl(doctor.photo)) {
         document.getElementById('sidebar-avatar').innerHTML =
-          `<img src="${doctor.photo}" alt="${doctor.name}">`;
+          `<img src="${doctor.photo}" alt="${window.escHtml(doctor.name)}">`;
       }
     }
 
@@ -184,44 +186,82 @@ function generateSlotsOnTheFly(doc, daysAhead = 30) {
 }
 
 // =========================================================
-// Render Available Days Select
+// Render Available Days List
 // =========================================================
 function renderAvailableDays() {
-  const selectElem = document.getElementById('available-days-select');
-  if (!selectElem) return;
-  const availableDates = Object.keys(slotsByDate).sort();
-
+  const listElem = document.getElementById('available-days-list');
+  const navElem  = document.getElementById('week-nav');
+  if (!listElem) return;
+  
   if (availableDates.length === 0) {
-    selectElem.innerHTML = `<option value="">لا توجد أيام متاحة للحجز حالياً</option>`;
-    selectElem.disabled = true;
-    return;
+    availableDates = Object.keys(slotsByDate).sort();
   }
 
-  selectElem.disabled = false;
+  if (availableDates.length === 0) {
+    listElem.innerHTML = `<div class="empty-slots" style="width:100%;padding:1rem;">لا توجد أيام متاحة للحجز حالياً</div>`;
+    if(navElem) navElem.style.display = 'none';
+    return;
+  }
   
-  let optionsHtml = `<option value="">-- اختر يوم الحجز --</option>`;
-  optionsHtml += availableDates.map(dateStr => {
+  // Calculate total weeks (7 days per week)
+  const totalWeeks = Math.ceil(availableDates.length / 7);
+  
+  if(navElem) {
+    if(totalWeeks > 1) {
+      navElem.style.display = 'flex';
+      document.getElementById('week-label').textContent = `الأسبوع ${currentWeekIndex + 1}`;
+      document.getElementById('prev-week-btn').disabled = currentWeekIndex === 0;
+      document.getElementById('next-week-btn').disabled = currentWeekIndex === totalWeeks - 1;
+    } else {
+      navElem.style.display = 'none';
+    }
+  }
+  
+  const startIndex = currentWeekIndex * 7;
+  const currentWeekDates = availableDates.slice(startIndex, startIndex + 7);
+  
+  let html = '';
+  currentWeekDates.forEach(dateStr => {
     const slots = slotsByDate[dateStr] || [];
     const dateObj = new Date(dateStr + 'T00:00:00');
     
-    // Format weekday (e.g., الإثنين)
-    const dayName = dateObj.toLocaleDateString('ar-EG', { weekday: 'long' });
-    // Format day number and month name (e.g., 24 يوليو)
-    const formattedDate = dateObj.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+    const dayName = dateObj.toLocaleDateString('ar-EG', { weekday: 'short' });
+    const dayNum = dateObj.getDate();
+    const monthName = dateObj.toLocaleDateString('ar-EG', { month: 'short' });
     
     const isSelected = dateStr === selectedDate ? 'selected' : '';
 
-    return `<option value="${dateStr}" ${isSelected}>${dayName}، ${formattedDate} (${slots.length} مواعيد)</option>`;
-  }).join('');
+    html += `
+      <div class="day-card ${isSelected}" onclick="onDaySelectChange('${dateStr}')">
+        <div class="day-name">${dayName}</div>
+        <div class="day-date">${dayNum}</div>
+        <div class="day-month">${monthName}</div>
+      </div>
+    `;
+  });
 
-  selectElem.innerHTML = optionsHtml;
+  listElem.innerHTML = html;
+}
+
+// =========================================================
+// Change Week
+// =========================================================
+function changeWeek(direction) {
+  const totalWeeks = Math.ceil(availableDates.length / 7);
+  // Note: direction is -1 for next (left arrow in RTL) and 1 for prev (right arrow in RTL)
+  if (direction === -1 && currentWeekIndex < totalWeeks - 1) {
+    currentWeekIndex++;
+    renderAvailableDays();
+  } else if (direction === 1 && currentWeekIndex > 0) {
+    currentWeekIndex--;
+    renderAvailableDays();
+  }
 }
 
 // =========================================================
 // Day Select Change
 // =========================================================
-function onDaySelectChange(el) {
-  const date = el.value;
+function onDaySelectChange(date) {
   selectedDate = date;
   selectedSlot = null;
   
@@ -231,6 +271,7 @@ function onDaySelectChange(el) {
     document.getElementById('sum-time').textContent = '-- لم يُحدَّد --';
     document.getElementById('proceed-btn').disabled = true;
     document.getElementById('slots-grid').innerHTML = '<div class="empty-slots">اختر يوماً من التقويم لعرض المواعيد المتاحة</div>';
+    renderAvailableDays();
     return;
   }
 
@@ -242,6 +283,7 @@ function onDaySelectChange(el) {
   document.getElementById('sum-time').textContent = '-- لم يُحدَّد --';
   document.getElementById('proceed-btn').disabled = true;
 
+  renderAvailableDays();
   renderSlots(date);
 }
 
@@ -260,7 +302,7 @@ function renderSlots(date) {
   slotsGrid.innerHTML = slots.map(slot => {
     const cls = slot.isBooked ? 'slot-btn booked' : 'slot-btn';
     const onclick = slot.isBooked ? '' : `onclick="onSlotClick(this, '${slot.id}')"`;
-    return `<button class="${cls}" data-slot-id="${slot.id}" ${onclick}>${slot.startTime}</button>`;
+    return `<div class="${cls}" data-slot-id="${slot.id}" ${onclick}>${slot.startTime}</div>`;
   }).join('');
 }
 

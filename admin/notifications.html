@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
@@ -79,10 +79,13 @@
     </div>
   </header>
 
+  <!-- Sidebar Overlay (mobile) -->
+  <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
   <div class="app-layout">
     <aside id="app-sidebar" class="sidebar">
       <div class="sidebar-logo">
-        <i class="fa-solid fa-laptop-medical" style="color:var(--primary-color);"></i>
+        <img src="../logo_sm.png" alt="Logo" style="max-height: 38px; width: auto; object-fit: contain;">
         <span>إدارة العيادة</span>
       </div>
       <ul class="sidebar-menu">
@@ -160,16 +163,26 @@
         </table>
       </div>
 
+    <footer style="margin-top: 3rem; padding: 1.5rem 0; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
+  <div>Â© 2026 Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø¹ÙŠØ§Ø¯Ø©. Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ‚ Ù…Ø­ÙÙˆØ¸Ø©.</div>
+  <img src="../logo_sm.png" alt="Logo" style="max-height: 32px; width: auto; object-fit: contain;">
+</footer>
     </main>
   </div>
 
+  <script src="../js/env.js"></script>
   <script src="../js/common.js"></script>
+  <script src="../js/data.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/theme.js"></script>
   <script src="../js/notifications.js"></script>
   <script>
-    document.getElementById('sidebar-toggle').addEventListener('click', () =>
-      document.getElementById('app-sidebar').classList.toggle('active'));
+    const _sb = document.getElementById('app-sidebar');
+    const _ov = document.getElementById('sidebar-overlay');
+    document.getElementById('sidebar-toggle').addEventListener('click', () => {
+      _sb.classList.toggle('active'); _ov.classList.toggle('active');
+    });
+    _ov.addEventListener('click', () => { _sb.classList.remove('active'); _ov.classList.remove('active'); });
   </script>
 </body>
 </html>

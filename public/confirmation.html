@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
@@ -30,6 +30,13 @@
     .confirmation-wrapper {
       max-width: 640px; margin: 0 auto;
       padding: 3rem 1.5rem 5rem;
+    }
+
+    @media (max-width: 480px) {
+      .confirmation-wrapper { padding: 1.5rem 1rem 3rem; }
+      .conf-title { font-size: 1.5rem; }
+      .portal-logo span { display: none; }
+      .portal-nav { padding: .75rem 1rem; }
     }
 
     /* Success Icon */
@@ -111,7 +118,7 @@
   <!-- Navbar -->
   <nav class="portal-nav no-print">
     <div class="portal-logo">
-      <div class="portal-logo-icon"><i class="fa-solid fa-hospital"></i></div>
+      <img src="../logo_sm.png" alt="Logo" style="max-height: 38px; width: auto; object-fit: contain; margin-left: 0.5rem;">
       <span id="clinic-name">العيادة</span>
     </div>
     <a href="index.html" class="btn btn-secondary" style="padding:.5rem 1rem;font-size:.85rem;">
@@ -206,8 +213,13 @@
 
   </div>
 
+  <script src="../js/env.js"></script>
   <script src="../js/common.js"></script>
   <script src="../js/theme.js"></script>
   <script src="../js/confirmation.js"></script>
+<footer style="margin-top: 3rem; padding: 1.5rem 0; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
+  <div>Â© 2026 Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø¹ÙŠØ§Ø¯Ø©. Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ‚ Ù…Ø­ÙÙˆØ¸Ø©.</div>
+  <img src="../logo_sm.png" alt="Logo" style="max-height: 32px; width: auto; object-fit: contain;">
+</footer>
 </body>
 </html>

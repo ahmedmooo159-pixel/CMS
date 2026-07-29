@@ -64,7 +64,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 function updateClinicBranding(settings) {
   const clinicNameEl = document.getElementById("clinic-name");
   const clinicTaglineEl = document.getElementById("clinic-tagline");
-  const logoContainer = document.getElementById("clinic-logo-container");
   
   if (settings.name && clinicNameEl) {
     clinicNameEl.textContent = settings.name;
@@ -72,7 +71,10 @@ function updateClinicBranding(settings) {
   if (settings.description && clinicTaglineEl) {
     clinicTaglineEl.textContent = settings.description;
   }
-  if (settings.logo && logoContainer) {
-    logoContainer.innerHTML = `<img src="${settings.logo}" alt="Clinic Logo" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+  if (settings.logo && window.isValidImageUrl(settings.logo)) {
+    const logoContainer = document.getElementById("clinic-logo-container");
+    if (logoContainer) {
+      logoContainer.innerHTML = `<img src="${settings.logo}" alt="Clinic Logo" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+    }
   }
 }

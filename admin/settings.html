@@ -31,11 +31,14 @@
     </div>
   </header>
 
+  <!-- Sidebar Overlay (mobile) -->
+  <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
   <div class="app-layout">
     <!-- Sidebar Navigation -->
     <aside id="app-sidebar" class="sidebar">
       <div class="sidebar-logo">
-        <i class="fa-solid fa-laptop-medical" style="color: var(--primary-color);"></i>
+        <img src="../logo_sm.png" alt="Logo" style="max-height: 38px; width: auto; object-fit: contain;">
         <span>إدارة العيادة</span>
       </div>
       
@@ -219,6 +222,52 @@
           
         </div>
 
+        <!-- Security Settings Card -->
+        <div class="card flex flex-col gap-4">
+          <h3 style="font-size: 1.25rem; font-family: var(--font-display); border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 0.5rem;">
+            <i class="fa-solid fa-shield-halved" style="color: var(--danger); margin-right: 0.5rem;"></i> إعدادات الأمان
+          </h3>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">
+            يمكنك تغيير البريد الإلكتروني أو كلمة المرور الخاصة بحساب الإدارة. يتطلب ذلك إدخال كلمة المرور الحالية.
+          </p>
+          
+          <div class="grid gap-6" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+            
+            <!-- Email Form -->
+            <div style="background: var(--bg-main); padding: 1rem; border-radius: 8px;">
+              <h4 style="margin-bottom: 1rem; font-size: 1rem;"><i class="fa-solid fa-envelope"></i> تغيير البريد الإلكتروني</h4>
+              <div class="form-group">
+                <label for="currentPasswordEmail" class="form-label">كلمة المرور الحالية</label>
+                <input type="password" id="currentPasswordEmail" class="form-input" placeholder="كلمة المرور الحالية">
+              </div>
+              <div class="form-group">
+                <label for="newEmailInput" class="form-label">البريد الإلكتروني الجديد</label>
+                <input type="email" id="newEmailInput" class="form-input" placeholder="البريد الجديد">
+              </div>
+              <button type="button" class="btn btn-secondary" style="width: 100%;" onclick="updateAdminEmail()">
+                حفظ البريد الإلكتروني
+              </button>
+            </div>
+
+            <!-- Password Form -->
+            <div style="background: var(--bg-main); padding: 1rem; border-radius: 8px;">
+              <h4 style="margin-bottom: 1rem; font-size: 1rem;"><i class="fa-solid fa-lock"></i> تغيير كلمة المرور</h4>
+              <div class="form-group">
+                <label for="currentPasswordPass" class="form-label">كلمة المرور الحالية</label>
+                <input type="password" id="currentPasswordPass" class="form-input" placeholder="كلمة المرور الحالية">
+              </div>
+              <div class="form-group">
+                <label for="newPasswordInput" class="form-label">كلمة المرور الجديدة</label>
+                <input type="password" id="newPasswordInput" class="form-input" placeholder="كلمة المرور الجديدة (6 أحرف على الأقل)">
+              </div>
+              <button type="button" class="btn btn-secondary" style="width: 100%;" onclick="updateAdminPassword()">
+                حفظ كلمة المرور
+              </button>
+            </div>
+
+          </div>
+        </div>
+
         <!-- Submit Panel -->
         <div class="card flex justify-between align-center" style="padding: 1rem 1.5rem; background: rgba(15, 20, 34, 0.4);">
           <span style="font-size: 0.85rem; color: var(--text-muted);">يرجى التأكد من البيانات قبل الحفظ.</span>
@@ -228,19 +277,27 @@
         </div>
 
       </form>
+    <footer style="margin-top: 3rem; padding: 1.5rem 0; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
+  <div>Â© 2026 Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø¹ÙŠØ§Ø¯Ø©. Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ‚ Ù…Ø­ÙÙˆØ¸Ø©.</div>
+  <img src="../logo_sm.png" alt="Logo" style="max-height: 32px; width: auto; object-fit: contain;">
+</footer>
     </main>
   </div>
 
+  <script src="../js/env.js"></script>
   <script src="../js/common.js"></script>
+  <script src="../js/data.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/theme.js"></script>
   <script src="../js/settings.js"></script>
   
   <script>
-    // Responsive sidebar toggler logic
-    document.getElementById("sidebar-toggle").addEventListener("click", () => {
-      document.getElementById("app-sidebar").classList.toggle("active");
+    const _sb = document.getElementById('app-sidebar');
+    const _ov = document.getElementById('sidebar-overlay');
+    document.getElementById('sidebar-toggle').addEventListener('click', () => {
+      _sb.classList.toggle('active'); _ov.classList.toggle('active');
     });
+    _ov.addEventListener('click', () => { _sb.classList.remove('active'); _ov.classList.remove('active'); });
   </script>
 </body>
 </html>

@@ -1,0 +1,417 @@
+{
+  "project": "Clinic Management System (CMS)",
+  "instructions_for_agent": "Execute sprints in order (sprint_number ascending). Do NOT start a sprint until all tasks in the previous sprint are marked done and acceptance_criteria are met. Within a sprint, tasks can be done in listed order. After finishing each sprint, run a quick smoke test of the affected pages before moving on.",
+  "sprints": [
+    {
+      "sprint_number": 1,
+      "title": "Critical Security Lockdown",
+      "goal": "Stop active data/payment exposure before touching anything else.",
+      "tasks": [
+        {
+          "id": "C1",
+          "file": "admin/firestore.rules",
+          "issue": "Firestore allows unrestricted public read/write to all collections.",
+          "fix": "Replace open rule with role-based rules: require request.auth != null and admin custom claim for admin collections; restrict public writes to booking creation only, validated by schema."
+        },
+        {
+          "id": "C2",
+          "file": "js/paymob.js",
+          "issue": "Paymob API key, public key, secret key, and HMAC are hardcoded in client-side JS.",
+          "fix": "Remove all hardcoded keys from the file. Rotate all 4 keys in the Paymob dashboard immediately. Move payment initiation and secret key usage to a backend (Cloud Function)."
+        },
+        {
+          "id": "C3",
+          "file": "js/paymob.js",
+          "issue": "Payment success is inferred from iframe/postMessage without HMAC signature verification.",
+          "fix": "Add a server-side (Cloud Function) HMAC verification endpoint for Paymob callbacks. Only mark paymentStatus as paid after server verification. Make the transaction idempotent."
+        },
+        {
+          "id": "C4",
+          "file": "js/common.js",
+          "issue": "Firebase Storage is never initialized outside mock mode; production upload calls crash.",
+          "fix": "After firebase.initializeApp(), add: const storage = firebase.storage(); window.storage = storage;"
+        },
+        {
+          "id": "C5",
+          "file": "admin/firebase-debug.log",
+          "issue": "Committed log file exposes local file paths and a signed-in email address.",
+          "fix": "Delete the file from the repo and git history. Add 'firebase-debug.log' and '*.log' to .gitignore."
+        },
+        {
+          "id": "C6",
+          "file": "js/common.js",
+          "issue": "Firebase config hardcoded with no environment separation, compounding the open-rules risk.",
+          "fix": "Move Firebase config values to an environment-specific config approach. Ensure Firestore/Storage rules are strict regardless of key exposure (Firebase keys are not secret by design, but rules must be)."
+        }
+      ],
+      "acceptance_criteria": [
+        "Firestore rules deny unauthenticated writes to sensitive collections",
+        "No Paymob secret/API/public keys or HMAC string appear anywhere in js/paymob.js",
+        "A Firestore write with an unverified payment cannot set paymentStatus to paid",
+        "Uploading a doctor photo or clinic logo works in production mode without console errors",
+        "firebase-debug.log no longer exists in the repo and is gitignored"
+      ]
+    },
+    {
+      "sprint_number": 2,
+      "title": "Auth, Booking Integrity & Firestore Indexes",
+      "goal": "Fix authentication trust issues and prevent double-booking / query failures.",
+      "tasks": [
+        {
+          "id": "H1",
+          "file": "js/auth.js",
+          "issue": "checkAuth() renders admin UI from a cached localStorage user before Firebase verifies it.",
+          "fix": "Wait for onAuthStateChanged to resolve before rendering any protected admin content."
+        },
+        {
+          "id": "H2",
+          "file": "js/dashboard.js, js/settings.js",
+          "issue": "Logout calls auth.signOut() directly without clearing the persisted auth cache.",
+          "fix": "Route all logout actions through window.adminSignOut() so the cache is cleared consistently."
+        },
+        {
+          "id": "H3",
+          "file": "js/booking.js",
+          "issue": "No transaction guarding slot booking; two users can book the same slot at once.",
+          "fix": "Wrap slot availability check + booking write in firebase.firestore().runTransaction()."
+        },
+        {
+          "id": "H4",
+          "file": "js/appointment-booking.js, js/booking.js",
+          "issue": "On-the-fly generated slots ('fly-' IDs) are never persisted to Firestore, so booking them fails in production.",
+          "fix": "Persist generated slots to Firestore before booking, or create+book them atomically inside the same transaction."
+        },
+        {
+          "id": "H5",
+          "file": "js/doctors.js",
+          "issue": "Every doctor edit regenerates slots without removing old unbooked ones, creating duplicates.",
+          "fix": "Before generating new slots, delete/replace existing future unbooked slots for that doctor."
+        },
+        {
+          "id": "H6",
+          "file": "js/paymob.js",
+          "issue": "Message and iframe load listeners are never removed; payment success can fire multiple times.",
+          "fix": "Add listeners with { once: true }, guard with a paymentCompleted flag, and remove listeners after completion."
+        },
+        {
+          "id": "H10",
+          "file": "admin/firestore.indexes.json",
+          "issue": "Indexes array is empty; several compound queries will fail at runtime.",
+          "fix": "Add composite indexes for: doctorId+appointmentDate (booking.js), isActive+displayOrder (portal.js), specialtyId+isActive (doctors-list.js), doctorId+isBooked (appointment-booking.js). Deploy indexes."
+        },
+        {
+          "id": "H11",
+          "file": "js/common.js",
+          "issue": "Mock auth mode accepts any non-empty email/password as a valid admin session.",
+          "fix": "Disable mock auth fallback in production; fail loudly with an error message if Firebase init fails instead of silently granting admin access."
+        }
+      ],
+      "acceptance_criteria": [
+        "Refreshing an admin page while logged out never briefly shows admin data",
+        "Logging out from any admin page clears localStorage auth cache",
+        "Two rapid concurrent booking attempts on the same slot: only one succeeds",
+        "Booking a fly-generated slot succeeds and persists correctly in Firestore",
+        "Editing a doctor's schedule twice does not create duplicate slot documents",
+        "A completed Paymob payment cannot trigger onPaymentSuccess() twice",
+        "All compound queries listed in H10 return results without a Firestore index error",
+        "Wrong Firebase config no longer silently logs the user in as admin"
+      ]
+    },
+    {
+      "sprint_number": 3,
+      "title": "XSS Hardening & Status Model Unification",
+      "goal": "Close injection points and make appointment status consistent everywhere.",
+      "tasks": [
+        {
+          "id": "H7",
+          "file": "js/dashboard.js",
+          "issue": "patientName/doctorName injected into innerHTML unescaped.",
+          "fix": "Use the shared escHtml() helper or textContent instead of innerHTML string interpolation."
+        },
+        {
+          "id": "H8",
+          "file": "js/appointment-booking.js, js/doctors.js, js/specialties.js, js/portal.js, js/theme.js",
+          "issue": "Image URLs from Firestore (photo, logo, icon) inserted into src without validation.",
+          "fix": "Validate that URLs start with https: before rendering; reject javascript: or other schemes."
+        },
+        {
+          "id": "H9",
+          "file": "js/reception.js, js/appointments.js",
+          "issue": "Reception uses arrived/in_session/done while admin appointments expects confirmed/completed, causing mismatched stats and workflow.",
+          "fix": "Define a single status enum (e.g. pending, confirmed, arrived, in_session, completed, cancelled) and use it consistently across all modules. Document the state machine in a comment in common.js."
+        }
+      ],
+      "acceptance_criteria": [
+        "Injecting an HTML tag into a patient/doctor name field does not execute in the dashboard",
+        "An image URL starting with javascript: is not rendered as an src",
+        "Reception and admin appointments pages show matching status labels and matching stats for the same appointment"
+      ]
+    },
+    {
+      "sprint_number": 4,
+      "title": "Mobile Responsiveness",
+      "goal": "Make the entire site usable on phone screen sizes; currently not responsive.",
+      "tasks": [
+        {
+          "id": "R1",
+          "file": "css/*.css, all HTML pages",
+          "issue": "Site layout is fixed/desktop-only; breaks or overflows on mobile viewports.",
+          "fix": "Audit every page (public booking flow + admin panel) at 360px, 390px, and 768px widths. Add responsive breakpoints using CSS media queries. Convert fixed-width containers to fluid/percentage or flex/grid layouts."
+        },
+        {
+          "id": "R2",
+          "file": "public/*.html",
+          "issue": "Booking flow (doctor list, slot picker, confirmation) is not tested or usable on small screens.",
+          "fix": "Make doctor cards stack vertically on mobile, ensure slot picker buttons are touch-sized (min 44x44px), and forms don't require horizontal scrolling."
+        },
+        {
+          "id": "R3",
+          "file": "admin/*.html",
+          "issue": "Admin tables and dashboards are desktop-only.",
+          "fix": "Add a mobile-friendly table pattern (horizontal scroll container or card-based row layout) for appointments/patients/payments tables on small screens."
+        },
+        {
+          "id": "R4",
+          "file": "all HTML pages <head>",
+          "issue": "Verify viewport meta tag is present and correct.",
+          "fix": "Ensure every page has <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">."
+        }
+      ],
+      "acceptance_criteria": [
+        "No horizontal scrolling on any public or admin page at 360px width",
+        "All buttons/links are comfortably tappable on a real phone",
+        "Booking flow can be completed start to finish on a mobile viewport",
+        "Admin tables are readable and usable on mobile without pinch-zoom"
+      ]
+    },
+    {
+      "sprint_number": 5,
+      "title": "UI Polish",
+      "goal": "Make the visual design feel more modern and less generic, without a redesign from scratch.",
+      "tasks": [
+        {
+          "id": "U1",
+          "file": "css/*.css",
+          "issue": "Current UI feels plain/templated.",
+          "fix": "Introduce a cohesive design pass: consistent spacing scale, refined color palette (keep brand colors but improve contrast/hierarchy), improved typography (weight/size hierarchy for headings vs body), subtle shadows and rounded corners on cards, smooth hover/focus transitions on buttons and inputs."
+        },
+        {
+          "id": "U2",
+          "file": "public/*.html",
+          "issue": "Booking flow lacks visual polish and clear step progress.",
+          "fix": "Add a simple step indicator (e.g. Doctor > Slot > Details > Payment > Confirmation) at the top of the booking flow. Improve empty/loading states with clean skeleton or spinner styling instead of blank screens."
+        },
+        {
+          "id": "U3",
+          "file": "admin/*.html",
+          "issue": "Admin dashboard is functional but visually flat.",
+          "fix": "Improve dashboard stat cards with icons, subtle color-coded accents per metric, and better spacing/grid alignment."
+        }
+      ],
+      "acceptance_criteria": [
+        "Visual review confirms consistent spacing/typography across pages",
+        "Booking flow shows clear progress to the user at each step",
+        "Buttons and inputs have visible hover/focus states",
+        "No functional behavior changed, only visual layer"
+      ]
+    },
+    {
+      "sprint_number": 6,
+      "title": "Subtle 3D Element on User-Facing Pages",
+      "goal": "Add one lightweight, tasteful 3D visual to public pages, not overdone.",
+      "tasks": [
+        {
+          "id": "D1",
+          "file": "public/index.html or public landing/hero section",
+          "issue": "Public pages are flat/static with no visual interest.",
+          "fix": "Add ONE small, simple 3D element (e.g. a lightweight rotating icon/shape like a medical cross, pill capsule, or heartbeat pulse using a minimal library such as Three.js or a CSS 3D transform) placed in the hero/header area only. Keep it small, slow-moving, and non-distracting — it should not block content, delay page load, or appear on every page."
+        },
+        {
+          "id": "D2",
+          "file": "public pages",
+          "issue": "3D element must not hurt performance or mobile experience.",
+          "fix": "Lazy-load the 3D asset/script so it doesn't block initial render. Disable or simplify the 3D element on mobile/low-power devices if it causes jank (e.g. show a static version instead)."
+        }
+      ],
+      "acceptance_criteria": [
+        "Exactly one subtle 3D element exists, placed only on user-facing (public) pages, not admin pages",
+        "It does not overlap or block booking flow content or buttons",
+        "Page load time is not noticeably affected",
+        "On mobile, the element either performs smoothly or gracefully falls back to a static version"
+      ]
+    },
+    {
+      "sprint_number": 7,
+      "title": "Code Deduplication & Maintainability",
+      "goal": "Reduce repeated logic and improve long-term maintainability.",
+      "tasks": [
+        {
+          "id": "M1",
+          "file": "reception.js, appointments.js, doctors.js, notifications.js, payments.js, reports.js, specialties.js, portal.js, doctors-list.js",
+          "issue": "escHtml/escapeHtml duplicated across 9 files.",
+          "fix": "Export a single window.escHtml from common.js and remove the duplicates from all other files."
+        },
+        {
+          "id": "M2",
+          "file": "all admin JS modules",
+          "issue": "Identical Firebase/localStorage data-loading boilerplate repeated across modules.",
+          "fix": "Create a shared data service layer (e.g. data.js) with reusable load/query functions for doctors, patients, specialties, appointments."
+        },
+        {
+          "id": "M3",
+          "file": "js/booking.js",
+          "issue": "selectedGender captured in UI but never persisted.",
+          "fix": "Either save gender to the patient/appointment record, or remove the UI field entirely."
+        },
+        {
+          "id": "M4",
+          "file": "js/doctors.js",
+          "issue": "maxAppointmentsPerDay is stored but never enforced.",
+          "fix": "Enforce the daily cap during slot generation and validate again in saveAppointment()."
+        },
+        {
+          "id": "M5",
+          "file": "js/booking.js",
+          "issue": "A new patient document is created on every booking, even for repeat phone numbers.",
+          "fix": "Query patients by phone number before creating a new one; reuse the existing patient ID if found."
+        }
+      ],
+      "acceptance_criteria": [
+        "escHtml exists in exactly one place and all modules reference it",
+        "No duplicated data-loading logic remains across admin modules",
+        "Gender field is either saved correctly or removed",
+        "Booking beyond maxAppointmentsPerDay for a doctor is blocked",
+        "Booking with an existing phone number reuses the existing patient record"
+      ]
+    },
+    {
+      "sprint_number": 8,
+      "title": "Remaining Medium/Low Fixes & Project Hygiene",
+      "goal": "Clean up remaining correctness, timezone, validation, and documentation gaps.",
+      "tasks": [
+        {
+          "id": "M6",
+          "file": "js/dashboard.js",
+          "issue": "'New patients this month' stat counts total patients instead of patients created this month.",
+          "fix": "Filter patients by createdAt within the current calendar month."
+        },
+        {
+          "id": "M7",
+          "file": "js/reception.js",
+          "issue": "Marking any status as arrived/in_session/done auto-marks payment as paid, even for non-cash appointments.",
+          "fix": "Only auto-mark paid when paymentMethod === 'cash'."
+        },
+        {
+          "id": "M8",
+          "file": "js/appointment-booking.js, js/doctors.js, js/booking.js",
+          "issue": "Date handling uses toISOString() (UTC) instead of clinic local time, causing slot date shifts near midnight.",
+          "fix": "Use local date formatting based on Africa/Cairo timezone instead of UTC conversion."
+        },
+        {
+          "id": "M9",
+          "file": "js/settings.js",
+          "issue": "Base64 logo images can be saved directly into a Firestore document, risking the 1 MiB document size limit.",
+          "fix": "Always upload images to Firebase Storage and store only the resulting URL in Firestore."
+        },
+        {
+          "id": "M10",
+          "file": "js/confirmation.js",
+          "issue": "Missing session data still shows a fake success page with a fabricated reference number.",
+          "fix": "Redirect to the booking start page or show an explicit 'no booking found' error state instead."
+        },
+        {
+          "id": "M11",
+          "file": "js/booking.js",
+          "issue": "Missing doctorId/slotId/slotDate URL params still allow form submission.",
+          "fix": "Validate required params on page load and block submission if any are missing."
+        },
+        {
+          "id": "M12",
+          "file": "doctors.js, specialties.js, settings.js upload handlers",
+          "issue": "No file size or MIME type validation on image uploads.",
+          "fix": "Reject files over 2-5MB and validate file.type before upload."
+        },
+        {
+          "id": "M13",
+          "file": "project root",
+          "issue": "No README, .env.example, or .gitignore exists.",
+          "fix": "Add a README with setup instructions, a .env.example for Firebase config, and a root .gitignore covering logs and env files."
+        },
+        {
+          "id": "M14",
+          "file": "all HTML pages",
+          "issue": "CDN scripts (Firebase, Font Awesome) loaded without Subresource Integrity.",
+          "fix": "Add integrity and crossorigin attributes to CDN <script>/<link> tags, or self-host these assets."
+        },
+        {
+          "id": "M15",
+          "file": "all HTML pages",
+          "issue": "No Content-Security-Policy is set.",
+          "fix": "Add a restrictive CSP meta tag allowing only trusted script/style sources."
+        },
+        {
+          "id": "L1",
+          "file": "js/reception.js",
+          "issue": "refreshTimer interval is never cleared on page unload.",
+          "fix": "Add window.addEventListener('beforeunload', () => clearInterval(refreshTimer))."
+        },
+        {
+          "id": "L2",
+          "file": "auth.js, reception.js, confirmation.js, payments.js",
+          "issue": "Silent empty catch blocks swallow errors.",
+          "fix": "Log the error at minimum; handle sign-out/auth failures explicitly with user feedback."
+        },
+        {
+          "id": "L3",
+          "file": "js/common.js",
+          "issue": "Firebase project ID has a typo ('clinc-mangment-system').",
+          "fix": "Rename if changing the project ID is feasible without breaking existing data; otherwise document it."
+        },
+        {
+          "id": "L6",
+          "file": "appointment-booking.js, booking-form.html, admin tables",
+          "issue": "Inline onclick handlers used throughout.",
+          "fix": "Replace with addEventListener-based event delegation for better CSP compliance and maintainability."
+        },
+        {
+          "id": "L7",
+          "file": "js/portal.js",
+          "issue": "Path prefix logic relies on pathname.includes('/public/'), which breaks under different hosting paths.",
+          "fix": "Make the base path configurable instead of hardcoded string matching."
+        }
+      ],
+      "acceptance_criteria": [
+        "Dashboard 'new patients this month' reflects only current-month patients",
+        "Reception only auto-marks paid for cash payment method",
+        "Slot dates remain correct near midnight in Cairo time",
+        "No base64 image data is written directly to a Firestore document",
+        "Direct navigation to confirmation page without a valid booking shows an error, not fake success",
+        "Booking with missing URL params is blocked",
+        "Oversized or wrong-type file uploads are rejected with a clear message",
+        "README, .env.example, and .gitignore exist at project root",
+        "CDN script tags include integrity attributes",
+        "A CSP meta tag is present on all pages",
+        "No console errors related to uncleared timers after navigating away",
+        "All previously empty catch blocks now log or handle the error"
+      ]
+    },
+    {
+      "sprint_number": 9,
+      "title": "Test Coverage",
+      "goal": "Establish baseline automated testing for the highest-risk flows.",
+      "tasks": [
+        {
+          "id": "T1",
+          "file": "new: tests/",
+          "issue": "Zero test coverage anywhere in the project.",
+          "fix": "Set up a lightweight test framework (e.g. Vitest or Jest). Write tests for: booking flow (slot select -> pay -> confirm), Firestore security rules (using the Firebase emulator + rules-unit-testing), auth/session handling, slot generation (no duplicates, timezone correctness), status transitions between reception and admin, and XSS escaping helpers."
+        }
+      ],
+      "acceptance_criteria": [
+        "A test suite runs via a single command (e.g. npm test)",
+        "Booking, security rules, and status-transition tests exist and pass",
+        "CI runs the test suite on every push (even a simple GitHub Actions workflow)"
+      ]
+    }
+  ]
+}

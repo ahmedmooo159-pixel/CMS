@@ -300,3 +300,71 @@
 [dir="rtl"] .form-input {
   text-align: right;
 }
+
+/* ============================================================
+   MOBILE COMPONENT RESPONSIVENESS — Sprint 4
+   ============================================================ */
+
+/* --- Touch-sized buttons (min 44×44px tap target) --- */
+@media (max-width: 768px) {
+  .btn {
+    min-height: 44px;
+    padding: 0.65rem 1.25rem;
+  }
+
+  /* --- Card: tighter padding on mobile --- */
+  .card {
+    padding: 1rem;
+    border-radius: 14px;
+  }
+  .card:hover {
+    transform: none; /* disable lift effect on touch */
+  }
+
+  /* --- Tables: horizontal scroll container --- */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 10px;
+  }
+  .table th,
+  .table td {
+    padding: 0.75rem 0.6rem;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+
+  /* --- Widget: smaller font on mobile --- */
+  .widget-value {
+    font-size: 1.4rem;
+  }
+  .widget-title {
+    font-size: 0.78rem;
+  }
+
+  /* --- Sidebar active border: make it more visible --- */
+  .sidebar-item.active a {
+    border-left-width: 4px;
+  }
+  [dir="rtl"] .sidebar-item.active a {
+    border-right-width: 4px;
+  }
+}
+
+/* --- Very small screens (360px) --- */
+@media (max-width: 400px) {
+  .btn {
+    font-size: 0.88rem;
+  }
+  .badge {
+    font-size: 0.68rem;
+    padding: 0.2rem 0.5rem;
+  }
+}
+
+/* --- Public portal nav on mobile --- */
+@media (max-width: 600px) {
+  .portal-nav-title {
+    display: none;
+  }
+}

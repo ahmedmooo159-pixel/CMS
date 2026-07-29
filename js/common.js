@@ -1,18 +1,16 @@
 // Firebase Initialization & Shared Helpers
-
+//
+// Unified Appointment Status Lifecycle:
+// pending -> confirmed -> arrived -> in_session -> completed
+// (Any state -> cancelled)
+//
 // Firebase Configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyCi-yb5EjTH3_ovqZYGPeRmQETw46BPaTU",
-  authDomain: "clinc-mangment-system.firebaseapp.com",
-  projectId: "clinc-mangment-system",
-  storageBucket: "clinc-mangment-system.firebasestorage.app",
-  messagingSenderId: "233799362620",
-  appId: "1:233799362620:web:67dd01f86cb55b6b33bb39",
-  measurementId: "G-VE4RQ1BR3Q"
-};
+const firebaseConfig = window.ENV && window.ENV.FIREBASE_CONFIG ? window.ENV.FIREBASE_CONFIG : {};
 
-let db, auth;
+let db, auth, storage;
 let isFirebaseConfigured = false;
+
+const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && window.location.protocol !== 'file:';
 
 // Initialize Firebase
 try {
@@ -20,15 +18,26 @@ try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     auth = firebase.auth();
+    storage = firebase.storage();
+    window.storage = storage; // Fix C4
     isFirebaseConfigured = true;
     console.log("Firebase initialized successfully with project: clinc-mangment-system");
   } else {
-    console.warn("Firebase credentials not set. Falling back to mockup / local mode.");
-    setupMockFirebase();
+    if (isProduction) {
+      alert("Critical Error: Firebase is not configured in a production environment.");
+      throw new Error("Firebase config missing in production");
+    } else {
+      console.warn("Firebase credentials not set. Falling back to mockup / local mode.");
+      setupMockFirebase();
+    }
   }
 } catch (error) {
   console.error("Failed to initialize Firebase:", error);
-  setupMockFirebase();
+  if (isProduction) {
+    alert("Critical Error: Failed to initialize Firebase.");
+  } else {
+    setupMockFirebase();
+  }
 }
 
 // Simple Mock Firebase implementation for local dev testing
@@ -104,6 +113,21 @@ function requireAdmin(onUser) {
     });
   }
 }
+
+// Global XSS Sanitizer Helper
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+window.escHtml = escHtml;
+
+// Global URL Validator Helper
+function isValidImageUrl(url) {
+  if (!url) return false;
+  return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/') || url.startsWith('data:image/');
+}
+window.isValidImageUrl = isValidImageUrl;
 
 // Export global tools to window object
 window.db                  = db;

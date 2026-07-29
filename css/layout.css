@@ -138,3 +138,62 @@
     display: flex;
   }
 }
+
+/* ============================================================
+   MOBILE RESPONSIVE BREAKPOINTS — Sprint 4
+   ============================================================ */
+
+/* --- Overlay backdrop for sidebar on mobile --- */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 49;
+}
+.sidebar-overlay.active {
+  display: block;
+}
+
+/* --- Container padding on small screens --- */
+@media (max-width: 480px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* --- Fluid grid utilities --- */
+@media (max-width: 640px) {
+  .grid-widgets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grid-dashboard-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 400px) {
+  .grid-widgets {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Responsive flex: stack on mobile --- */
+@media (max-width: 640px) {
+  .flex-mobile-col {
+    flex-direction: column !important;
+  }
+  .hide-mobile {
+    display: none !important;
+  }
+  .full-mobile {
+    width: 100% !important;
+  }
+}
+
+/* --- Gap utilities for mobile --- */
+@media (max-width: 640px) {
+  .gap-mobile-2 { gap: 0.5rem !important; }
+  .gap-mobile-3 { gap: 0.75rem !important; }
+}

@@ -117,6 +117,12 @@ async function submitBooking() {
   const statusEl = document.getElementById('booking-status');
   const btn      = document.getElementById('confirm-booking-btn');
 
+  // [M3] Validate required URL params
+  if (!doctorId || !slotId || !slotDate) {
+    showStatus('رابط الحجز غير مكتمل. يرجى العودة واختيار موعد مرة أخرى.', 'error');
+    return;
+  }
+
   const err = validateForm();
   if (err) { showStatus(err, 'error'); return; }
 
@@ -128,7 +134,20 @@ async function submitBooking() {
       firstName: document.getElementById('patientFirstName').value.trim(),
       lastName:  document.getElementById('patientLastName').value.trim(),
       phone:     document.getElementById('patientPhone').value.trim(),
+      gender:    selectedGender,   // [M3] persist gender
     };
+
+    // [M4] Enforce daily appointment cap
+    const doctor = window._bookingDoctor;
+    if (doctor && doctor.maxAppointmentsPerDay) {
+      const currentCount = await window.dataService.countDoctorAppointmentsOnDate(doctorId, slotDate);
+      if (currentCount >= doctor.maxAppointmentsPerDay) {
+        showStatus(`عذراً، الطبيب وصل للحد الأقصى من المواعيد في هذا اليوم (${doctor.maxAppointmentsPerDay} مواعيد).`, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-calendar-check"></i> تأكيد الحجز';
+        return;
+      }
+    }
 
     // If online payment — trigger Paymob flow
     if (selectedPayment === 'online') {
@@ -180,30 +199,43 @@ async function saveAppointment(patient, notes, paymentMethod, paymentStatus, pay
     });
   }
 
-  // 1. Save / find patient record
+  // 1. Find existing patient by phone or create new one (M5)
   let patientId = '';
   if (window.isFirebaseConfigured) {
-    const pDoc = await db.collection('patients').add({
-      ...patient,
-      clinicId: 'settings',
-      notes: notes,
-      createdAt: now, updatedAt: now
-    });
-    patientId = pDoc.id;
+    const existingPatient = await window.dataService.findPatientByPhone(patient.phone);
+    if (existingPatient) {
+      patientId = existingPatient.id;
+      // Optionally update name if changed
+      await db.collection('patients').doc(patientId).update({ updatedAt: now });
+    } else {
+      const pDoc = await db.collection('patients').add({
+        ...patient,
+        clinicId: 'settings',
+        notes: notes,
+        createdAt: now, updatedAt: now
+      });
+      patientId = pDoc.id;
+    }
   } else {
-    patientId = 'mock-pat-' + Date.now();
     const patients = JSON.parse(localStorage.getItem('mock_patients') || '[]');
-    patients.push({ id: patientId, ...patient, notes, clinicId:'settings', createdAt:now });
-    localStorage.setItem('mock_patients', JSON.stringify(patients));
+    const existing = patients.find(p => p.phone === patient.phone);
+    if (existing) {
+      patientId = existing.id;
+    } else {
+      patientId = 'mock-pat-' + Date.now();
+      patients.push({ id: patientId, ...patient, notes, clinicId:'settings', createdAt:now });
+      localStorage.setItem('mock_patients', JSON.stringify(patients));
+    }
   }
 
-  // 2. Save appointment
+  // 2. Setup appointment object
   const patientFullName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim();
   const appointment = {
     clinicId:        'settings',
     patientId,
     patientName:     patientFullName,
     patientPhone:    patient.phone || '',
+    patientGender:   patient.gender || '',   // [M3]
     doctorId,
     specialtyId,
     slotId,
@@ -222,13 +254,42 @@ async function saveAppointment(patient, notes, paymentMethod, paymentStatus, pay
     createdAt: now, updatedAt: now
   };
 
+  // 3. Save appointment and update slot in a transaction
   if (window.isFirebaseConfigured) {
-    const aDoc = await db.collection('appointments').add(appointment);
-    appointment.id = aDoc.id;
-    // 3. Mark slot as booked
-    if (slotId) {
-      await db.collection('availableSlots').doc(slotId).update({ isBooked: true, updatedAt: now });
-    }
+    await db.runTransaction(async (t) => {
+      // Slot validation & update/creation
+      if (slotId) {
+        const slotRef = db.collection('availableSlots').doc(slotId);
+        const slotDoc = await t.get(slotRef);
+        
+        if (slotDoc.exists) {
+          if (slotDoc.data().isBooked) {
+            throw new Error('عذراً، هذا الموعد تم حجزه من قبل شخص آخر للتو.');
+          }
+          t.update(slotRef, { isBooked: true, updatedAt: now });
+        } else {
+          // It's a "fly" slot that doesn't exist yet, so we persist it
+          if (slotId.startsWith('fly-')) {
+            t.set(slotRef, {
+              doctorId,
+              appointmentDate: slotDate,
+              startTime: slotStart,
+              endTime: slotEnd,
+              isBooked: true,
+              createdAt: now,
+              updatedAt: now
+            });
+          } else {
+            throw new Error('الموعد غير موجود.');
+          }
+        }
+      }
+
+      // Create appointment
+      const aRef = db.collection('appointments').doc();
+      t.set(aRef, appointment);
+      appointment.id = aRef.id;
+    });
   } else {
     appointment.id = 'mock-appt-' + Date.now();
     const appts = JSON.parse(localStorage.getItem('mock_appointments') || '[]');
@@ -237,7 +298,10 @@ async function saveAppointment(patient, notes, paymentMethod, paymentStatus, pay
     // Mark slot booked in mock
     const slots = JSON.parse(localStorage.getItem('mock_slots') || '[]');
     const idx   = slots.findIndex(s => s.id === slotId);
-    if (idx !== -1) { slots[idx].isBooked = true; localStorage.setItem('mock_slots', JSON.stringify(slots)); }
+    if (idx !== -1) { 
+      slots[idx].isBooked = true; 
+      localStorage.setItem('mock_slots', JSON.stringify(slots)); 
+    }
   }
 
   // 4. Store confirmation data for confirmation page

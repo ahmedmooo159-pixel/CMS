@@ -358,8 +358,4 @@ function showStatus(msg, type = 'success') {
   setTimeout(() => { statusEl.style.display = 'none'; }, 4000);
 }
 
-function escHtml(str) {
-  const d = document.createElement('div');
-  d.textContent = str || '';
-  return d.innerHTML;
-}
+// escHtml is provided globally by common.js — no local copy needed

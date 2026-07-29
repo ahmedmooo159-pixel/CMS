@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
     logoutBtn.addEventListener("click", async (e) => {
       e.preventDefault();
       try {
-        await window.auth.signOut();
+        await window.adminSignOut();
         window.location.href = `${window.BASE_PATH || ''}/admin/login.html`;
       } catch (err) {
         console.error("Sign out error:", err);
@@ -180,4 +180,76 @@ document.addEventListener("DOMContentLoaded", () => {
   function hideStatus() {
     statusDiv.style.display = "none";
   }
+  
+  // Attach showStatus to window so the new functions can use it
+  window.showSettingsStatus = showStatus;
 });
+
+// =========================================================
+// Security Settings: Update Email & Password
+// =========================================================
+
+async function _reauthenticateUser(currentPassword) {
+  if (!window.auth || !window.auth.currentUser) throw new Error("not_logged_in");
+  const user = window.auth.currentUser;
+  const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+  return user.reauthenticateWithCredential(credential);
+}
+
+function handleAuthError(err) {
+  console.error("Auth Error:", err);
+  switch(err.code) {
+    case 'auth/wrong-password': return "كلمة المرور الحالية غير صحيحة.";
+    case 'auth/weak-password': return "كلمة المرور ضعيفة جداً. يجب أن تتكون من 6 أحرف على الأقل.";
+    case 'auth/email-already-in-use': return "البريد الإلكتروني الجديد مستخدم بالفعل في حساب آخر.";
+    case 'auth/invalid-email': return "صيغة البريد الإلكتروني غير صحيحة.";
+    case 'auth/requires-recent-login': return "يرجى تسجيل الخروج وتسجيل الدخول مرة أخرى لإتمام هذه العملية.";
+    default: return err.message === "not_logged_in" ? "أنت غير مسجل الدخول." : ("حدث خطأ: " + err.message);
+  }
+}
+
+window.updateAdminEmail = async function() {
+  const currentPass = document.getElementById('currentPasswordEmail').value;
+  const newEmail = document.getElementById('newEmailInput').value.trim();
+  
+  if (!currentPass) { window.showSettingsStatus("يرجى إدخال كلمة المرور الحالية أولاً.", "danger"); return; }
+  if (!newEmail) { window.showSettingsStatus("يرجى إدخال البريد الإلكتروني الجديد.", "danger"); return; }
+  
+  try {
+    if (window.isFirebaseConfigured) {
+      window.showSettingsStatus("جاري تغيير البريد الإلكتروني...", "info");
+      await _reauthenticateUser(currentPass);
+      await window.auth.currentUser.updateEmail(newEmail);
+      window.showSettingsStatus("تم تغيير البريد الإلكتروني بنجاح!", "success");
+      document.getElementById('currentPasswordEmail').value = '';
+      document.getElementById('newEmailInput').value = '';
+    } else {
+      window.showSettingsStatus("وضع المطور (Mock Mode): تم تجاهل التغيير.", "info");
+    }
+  } catch (err) {
+    window.showSettingsStatus(handleAuthError(err), "danger");
+  }
+};
+
+window.updateAdminPassword = async function() {
+  const currentPass = document.getElementById('currentPasswordPass').value;
+  const newPass = document.getElementById('newPasswordInput').value;
+  
+  if (!currentPass) { window.showSettingsStatus("يرجى إدخال كلمة المرور الحالية أولاً.", "danger"); return; }
+  if (!newPass || newPass.length < 6) { window.showSettingsStatus("كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل.", "danger"); return; }
+  
+  try {
+    if (window.isFirebaseConfigured) {
+      window.showSettingsStatus("جاري تغيير كلمة المرور...", "info");
+      await _reauthenticateUser(currentPass);
+      await window.auth.currentUser.updatePassword(newPass);
+      window.showSettingsStatus("تم تغيير كلمة المرور بنجاح!", "success");
+      document.getElementById('currentPasswordPass').value = '';
+      document.getElementById('newPasswordInput').value = '';
+    } else {
+      window.showSettingsStatus("وضع المطور (Mock Mode): تم تجاهل التغيير.", "info");
+    }
+  } catch (err) {
+    window.showSettingsStatus(handleAuthError(err), "danger");
+  }
+};

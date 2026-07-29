@@ -169,7 +169,7 @@ function renderDoctors() {
 
       <div class="doctor-card-header">
         <div class="doctor-avatar">
-          ${d.photo ? `<img src="${d.photo}" alt="${d.name}">` : `<i class="fa-solid fa-user-doctor"></i>`}
+          ${d.photo && window.isValidImageUrl(d.photo) ? `<img src="${d.photo}" alt="${window.escHtml(d.name)}">` : `<i class="fa-solid fa-user-doctor"></i>`}
         </div>
         <div>
           <div class="doctor-name">${escapeHtml(d.name)}</div>
@@ -298,6 +298,10 @@ function getQualifications() {
 function setPhotoPreview(url) {
   const el = document.getElementById('photo-preview');
   if (url) {
+    if (!window.isValidImageUrl(url)) {
+      el.innerHTML = '<span style="color:var(--danger);">رابط غير صالح</span>';
+      return;
+    }
     el.innerHTML = `<img src="${url}" alt="photo">`;
   } else {
     el.innerHTML = `<i class="fa-solid fa-user-doctor"></i>`;
@@ -524,20 +528,53 @@ async function generateSlotsForDoctor(doctor, daysAhead = 30) {
 
   // Save to Firestore or mock storage
   if (window.isFirebaseConfigured) {
-    const batch = db.batch();
+    const todayStr = new Date().toISOString().split('T')[0];
+    const oldSlotsSnap = await db.collection('availableSlots')
+       .where('doctorId', '==', doctor.id)
+       .where('isBooked', '==', false)
+       .where('date', '>=', todayStr)
+       .get();
+
+    // Use multiple batches if we exceed the 500 operation limit
+    let batch = db.batch();
+    let opCount = 0;
+
+    oldSlotsSnap.forEach(doc => {
+       batch.delete(doc.ref);
+       opCount++;
+       if (opCount === 490) {
+           batch.commit();
+           batch = db.batch();
+           opCount = 0;
+       }
+    });
+
     slots.forEach(slot => {
       const ref = db.collection('availableSlots').doc();
       batch.set(ref, slot);
+      opCount++;
+      if (opCount === 490) {
+          batch.commit();
+          batch = db.batch();
+          opCount = 0;
+      }
     });
-    await batch.commit();
+    
+    if (opCount > 0) {
+       await batch.commit();
+    }
   } else {
     // Assign IDs to each slot in mock mode
     const slotsWithIds = slots.map((s, i) => ({
       ...s,
       id: `mock-slot-${doctor.id}-${s.date}-${i}`
     }));
+    
+    const todayStr = new Date().toISOString().split('T')[0];
+    // clear old future unbooked slots for doctor
     const existing = JSON.parse(localStorage.getItem('mock_slots') || '[]')
-      .filter(s => s.doctorId !== doctor.id); // clear old slots for doctor
+      .filter(s => !(s.doctorId === doctor.id && !s.isBooked && s.date >= todayStr));
+    
     localStorage.setItem('mock_slots', JSON.stringify([...existing, ...slotsWithIds]));
   }
 

@@ -19,7 +19,7 @@ const RECEPTION_STATUSES = {
   confirmed:  { label:'تم التأكيد',   badge:'badge-arrived',    icon:'fa-check' },
   arrived:    { label:'وصل',           badge:'badge-arrived',    icon:'fa-walking' },
   in_session: { label:'داخل العيادة', badge:'badge-in_session', icon:'fa-stethoscope' },
-  done:       { label:'انتهى',         badge:'badge-done',       icon:'fa-circle-check' },
+  completed:  { label:'مكتملة',       badge:'badge-done',       icon:'fa-circle-check' },
   cancelled:  { label:'ملغي',          badge:'badge-cancelled',  icon:'fa-ban' },
 };
 
@@ -148,7 +148,7 @@ function renderTabs() {
   const docIdsWithAppts = [...new Set(appointments.map(a => a.doctorId).filter(Boolean))];
   const docsToday = allDoctors.filter(d => docIdsWithAppts.includes(d.id));
 
-  const totalActive = appointments.filter(a => !['done','cancelled'].includes(a.status || 'pending')).length;
+  const totalActive = appointments.filter(a => !['completed','cancelled'].includes(a.status || 'pending')).length;
 
   let html = `
     <button class="doc-tab ${activeDocFilter === 'all' ? 'active' : ''}" onclick="setDocFilter('all')">
@@ -158,7 +158,7 @@ function renderTabs() {
 
   docsToday.forEach(doc => {
     const docAppts   = appointments.filter(a => a.doctorId === doc.id);
-    const waiting    = docAppts.filter(a => !['done','cancelled'].includes(a.status || 'pending')).length;
+    const waiting    = docAppts.filter(a => !['completed','cancelled'].includes(a.status || 'pending')).length;
     const isActive   = activeDocFilter === doc.id;
     html += `
       <button class="doc-tab ${isActive ? 'active' : ''}" onclick="setDocFilter('${doc.id}')">
@@ -186,9 +186,9 @@ function renderQueue() {
     ? appointments
     : appointments.filter(a => a.doctorId === activeDocFilter);
 
-  // Separate active vs done/cancelled
-  const active    = list.filter(a => !['done','cancelled'].includes(a.status || 'pending'));
-  const finished  = list.filter(a => ['done','cancelled'].includes(a.status || 'pending'));
+  // Separate active vs completed/cancelled
+  const active    = list.filter(a => !['completed','cancelled'].includes(a.status || 'pending'));
+  const finished  = list.filter(a => ['completed','cancelled'].includes(a.status || 'pending'));
   const displayed = [...active, ...finished];
 
   if (displayed.length === 0) {
@@ -221,9 +221,9 @@ function renderQueueItem(a) {
     actions += `<button class="q-btn session" onclick="setStatus('${a.id}','in_session')"><i class="fa-solid fa-stethoscope"></i> أدخل للدكتور</button>`;
   }
   if (status === 'in_session') {
-    actions += `<button class="q-btn done" onclick="setStatus('${a.id}','done')"><i class="fa-solid fa-check"></i> إنهاء الكشف</button>`;
+    actions += `<button class="q-btn done" onclick="setStatus('${a.id}','completed')"><i class="fa-solid fa-check"></i> إنهاء الكشف</button>`;
   }
-  if (!['done','cancelled'].includes(status)) {
+  if (!['completed','cancelled'].includes(status)) {
     actions += `<button class="q-btn cancel" onclick="setStatus('${a.id}','cancelled')"><i class="fa-solid fa-ban"></i> إلغاء</button>`;
   }
 
@@ -259,22 +259,18 @@ async function setStatus(id, newStatus) {
   try {
     const now = new Date().toISOString();
 
-    // Map reception status → appointment status for Firestore
-    const apptStatus = ['arrived','in_session'].includes(newStatus) ? 'confirmed' : newStatus;
-
     // Automatic Payment Confirmation:
-    // When marked arrived, in_session, or done, auto-mark cash appointments as paid!
+    // When marked arrived, in_session, or completed, auto-mark cash appointments as paid!
     const currentAppt = appointments.find(a => a.id === id);
     let shouldAutoPay = false;
-    if (['arrived', 'in_session', 'done'].includes(newStatus)) {
+    if (['arrived', 'in_session', 'completed'].includes(newStatus)) {
       if (!currentAppt || currentAppt.paymentStatus !== 'paid') {
         shouldAutoPay = true;
       }
     }
 
     const updateFields = {
-      status: apptStatus,
-      receptionStatus: newStatus,
+      status: newStatus,
       updatedAt: now
     };
     if (shouldAutoPay) {
@@ -392,10 +388,4 @@ function showStatus(msg, type = 'success') {
   el.className   = `status-bar ${type}`;
   el.style.display = 'block';
   setTimeout(() => { el.style.display = 'none'; }, 4000);
-}
-
-function escHtml(str) {
-  const d = document.createElement('div');
-  d.textContent = str || '';
-  return d.innerHTML;
 }

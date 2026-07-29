@@ -21,10 +21,12 @@ const filterDate   = document.getElementById('filter-date');
 
 // ---- Status Labels ----
 const STATUS_LABELS = {
-  pending:   { label:'في الانتظار',  cls:'badge-pending',   icon:'fa-clock' },
-  confirmed: { label:'مؤكدة',        cls:'badge-confirmed',  icon:'fa-circle-check' },
-  completed: { label:'مكتملة',       cls:'badge-completed',  icon:'fa-star' },
-  cancelled: { label:'ملغاة',        cls:'badge-cancelled',  icon:'fa-ban' },
+  pending:    { label:'في الانتظار',  cls:'badge-pending',   icon:'fa-clock' },
+  confirmed:  { label:'مؤكدة',        cls:'badge-confirmed', icon:'fa-check' },
+  arrived:    { label:'وصل',          cls:'badge-confirmed', icon:'fa-walking' },
+  in_session: { label:'داخل العيادة',  cls:'badge-confirmed', icon:'fa-stethoscope' },
+  completed:  { label:'مكتملة',       cls:'badge-completed', icon:'fa-star' },
+  cancelled:  { label:'ملغاة',        cls:'badge-cancelled', icon:'fa-ban' },
 };
 
 const PAY_LABELS = {
@@ -354,10 +356,4 @@ function showStatus(msg, type = 'success') {
   statusEl.className   = `status-bar ${type}`;
   statusEl.style.display = 'block';
   setTimeout(() => { statusEl.style.display = 'none'; }, 4000);
-}
-
-function escHtml(str) {
-  const d = document.createElement('div');
-  d.textContent = str || '';
-  return d.innerHTML;
 }

@@ -8,10 +8,10 @@
   --secondary-hover: #0891b2;
 
   /* Premium Light Theme */
-  --bg-main: #f1f5f9;
-  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-main: #e2e8f0;
+  --bg-card: rgba(255, 255, 255, 0.95);
   --bg-sidebar: #ffffff;
-  --bg-input: #e2e8f0;
+  --bg-input: #cbd5e1;
   
   --text-primary: #0f172a;
   --text-muted: #64748b;
@@ -50,10 +50,10 @@
 
 /* Dark Mode Overrides */
 body.dark-theme {
-  --bg-main: #090d16;
-  --bg-card: rgba(19, 25, 41, 0.75);
-  --bg-sidebar: #0d121f;
-  --bg-input: #161e31;
+  --bg-main: #05080c;
+  --bg-card: rgba(13, 17, 28, 0.85);
+  --bg-sidebar: #090c13;
+  --bg-input: #0f1523;
   --text-primary: #f8fafc;
   --text-muted: #94a3b8;
   --border-color: rgba(255, 255, 255, 0.1);

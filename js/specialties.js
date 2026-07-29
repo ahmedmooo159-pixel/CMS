@@ -127,8 +127,8 @@ function renderList() {
 
       <!-- Icon -->
       <div class="specialty-icon-preview" id="icon-${s.id}">
-        ${s.icon
-          ? `<img src="${s.icon}" alt="${s.name}">`
+          ${s.icon && window.isValidImageUrl(s.icon)
+            ? `<img src="${s.icon}" alt="${window.escHtml(s.name)}">`
           : `<i class="fa-solid fa-briefcase-medical"></i>`}
       </div>
 
@@ -414,6 +414,10 @@ function setIconPreview(containerId, url) {
   const el = document.getElementById(containerId);
   if (!el) return;
   if (url) {
+    if (!window.isValidImageUrl(url)) {
+      el.innerHTML = '<span style="color:var(--danger);">رابط غير صالح</span>';
+      return;
+    }
     el.innerHTML = `<img src="${url}" alt="icon">`;
   } else {
     el.innerHTML = `<i class="fa-solid fa-briefcase-medical"></i>`;
