@@ -80,6 +80,12 @@ function renderConfirmation() {
     document.getElementById('conf-subtitle').textContent = `تم تسجيل حجزك${queueMsg} يرجى الحضور في الموعد المحدد وإحضار هذا الرقم المرجعي.`;
   }
 
+  // Pre-fill cancel link with booking ref
+  const cancelLink = document.getElementById('cancel-booking-link');
+  if (cancelLink && data.ref) {
+    cancelLink.href = `cancel-booking.html?ref=${encodeURIComponent(data.ref)}`;
+  }
+
   // Clear session after reading
   sessionStorage.removeItem('booking_confirmation');
 }

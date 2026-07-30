@@ -183,9 +183,14 @@
           <h2 style="font-size:2rem;font-family:var(--font-display);">إدارة الحجوزات</h2>
           <p style="color:var(--text-muted);font-size:.95rem;">متابعة وتحديث جميع حجوزات العيادة.</p>
         </div>
-        <button id="export-btn" class="btn btn-secondary">
-          <i class="fa-solid fa-file-export"></i> تصدير CSV
-        </button>
+        <div style="display: flex; gap: 0.75rem;">
+          <button id="cleanup-expired-btn" class="btn btn-secondary" style="border-color: rgba(239, 68, 68, 0.35); color: var(--danger);">
+            <i class="fa-solid fa-trash-can"></i> تنظيف المواعيد المنتهية
+          </button>
+          <button id="export-btn" class="btn btn-secondary">
+            <i class="fa-solid fa-file-export"></i> تصدير CSV
+          </button>
+        </div>
       </div>
 
       <!-- Status -->

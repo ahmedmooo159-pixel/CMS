@@ -39,7 +39,7 @@ const PAY_LABELS = {
 // =========================================================
 // Init
 // =========================================================
-document.addEventListener('DOMContentLoaded', async () => {
+  document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('logout-btn').addEventListener('click', async e => {
     e.preventDefault();
     try { window.adminSignOut(); } catch(err) {}
@@ -50,6 +50,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('export-btn').addEventListener('click', exportCSV);
   document.getElementById('reset-filters-btn').addEventListener('click', resetFilters);
 
+  // Manual cleanup button (optional, injected by HTML if present)
+  const cleanupBtn = document.getElementById('cleanup-expired-btn');
+  if (cleanupBtn) cleanupBtn.addEventListener('click', () => autoCleanupExpiredAppointments(true));
+
   searchEl.addEventListener('input',       applyFilters);
   filterStatus.addEventListener('change',  applyFilters);
   filterDoctor.addEventListener('change',  applyFilters);
@@ -57,6 +61,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await Promise.all([loadDoctors(), loadSpecialties(), loadPatients()]);
   await loadAppointments();
+
+  // Run cleanup silently in background (max once per day)
+  autoCleanupExpiredAppointments(false);
 });
 
 // =========================================================
@@ -175,6 +182,123 @@ function toggleLoadMoreBtn() {
 }
 
 // =========================================================
+// Auto-Cancel Expired Appointments
+// Runs in background after page loads (max once per day).
+// Finds all pending/confirmed with appointmentDate < today
+// and cancels them + frees their availableSlots.
+// Pass forceRun=true to skip the once-per-day guard.
+// =========================================================
+async function autoCleanupExpiredAppointments(forceRun = false) {
+  const todayStr    = new Date().toISOString().split('T')[0];
+  const storageKey  = 'appt_cleanup_last_run';
+  const lastRun     = localStorage.getItem(storageKey);
+
+  // Skip if already ran today (unless forced)
+  if (!forceRun && lastRun === todayStr) return;
+
+  try {
+    let expiredAppts = [];
+
+    if (window.isFirebaseConfigured) {
+      // Query: pending or confirmed AND date < today
+      // Firestore can't do OR natively, so we run two queries
+      const [pendingSnap, confirmedSnap] = await Promise.all([
+        db.collection('appointments')
+          .where('status', '==', 'pending')
+          .where('appointmentDate', '<', todayStr)
+          .get(),
+        db.collection('appointments')
+          .where('status', '==', 'confirmed')
+          .where('appointmentDate', '<', todayStr)
+          .get()
+      ]);
+
+      pendingSnap.forEach(d   => expiredAppts.push({ id: d.id, ...d.data() }));
+      confirmedSnap.forEach(d => expiredAppts.push({ id: d.id, ...d.data() }));
+
+      if (expiredAppts.length === 0) {
+        localStorage.setItem(storageKey, todayStr);
+        return;
+      }
+
+      const now = new Date().toISOString();
+
+      // Batch update in chunks of 490 (Firestore limit is 500 ops/batch)
+      const CHUNK = 490;
+      for (let i = 0; i < expiredAppts.length; i += CHUNK) {
+        const chunk = expiredAppts.slice(i, i + CHUNK);
+        const batch = db.batch();
+
+        for (const appt of chunk) {
+          // Cancel the appointment
+          const apptRef = db.collection('appointments').doc(appt.id);
+          batch.update(apptRef, { status: 'cancelled', updatedAt: now, cancelledBy: 'auto_expired' });
+
+          // Free the slot if it has one
+          if (appt.slotId) {
+            const slotRef = db.collection('availableSlots').doc(appt.slotId);
+            batch.update(slotRef, { isBooked: false, updatedAt: now });
+          }
+        }
+
+        await batch.commit();
+      }
+
+      console.log(`[Cleanup] Auto-cancelled ${expiredAppts.length} expired appointment(s).`);
+
+    } else {
+      // Mock mode — cancel in localStorage
+      const now   = new Date().toISOString();
+      const appts = JSON.parse(localStorage.getItem('mock_appointments') || '[]');
+      const slots = JSON.parse(localStorage.getItem('mock_slots') || '[]');
+      let changed = 0;
+
+      appts.forEach(appt => {
+        if ((appt.status === 'pending' || appt.status === 'confirmed')
+            && appt.appointmentDate && appt.appointmentDate < todayStr) {
+          appt.status      = 'cancelled';
+          appt.updatedAt   = now;
+          appt.cancelledBy = 'auto_expired';
+          changed++;
+
+          // Free the slot
+          if (appt.slotId) {
+            const si = slots.findIndex(s => s.id === appt.slotId);
+            if (si !== -1) slots[si].isBooked = false;
+          }
+        }
+      });
+
+      if (changed > 0) {
+        localStorage.setItem('mock_appointments', JSON.stringify(appts));
+        localStorage.setItem('mock_slots',        JSON.stringify(slots));
+        console.log(`[Cleanup] Auto-cancelled ${changed} expired appointment(s) in mock.`);
+      }
+    }
+
+    // Mark ran today
+    localStorage.setItem(storageKey, todayStr);
+
+    // Refresh the local list to reflect cancelled status
+    const updatedIds = new Set(expiredAppts?.map(a => a.id) || []);
+    if (updatedIds.size > 0) {
+      allAppointments.forEach(a => {
+        if (updatedIds.has(a.id)) a.status = 'cancelled';
+      });
+      updateStats();
+      applyFilters();
+
+      if (forceRun) {
+        showStatus(`✔ تم تلقائياً إلغاء ${updatedIds.size} موعد منتهٍ وتحرير مواعيده.`, 'success');
+      }
+    }
+
+  } catch (err) {
+    console.error('[Cleanup] autoCleanupExpiredAppointments error:', err);
+  }
+}
+
+// =========================================================
 // Stats
 // =========================================================
 function updateStats() {
@@ -286,16 +410,47 @@ function buildActionButtons(a) {
 // =========================================================
 async function updateStatus(id, newStatus) {
   try {
-    const now = new Date().toISOString();
+    const now  = new Date().toISOString();
+    const appt = allAppointments.find(a => a.id === id);
+    const slotId = appt?.slotId || null;
+
     if (window.isFirebaseConfigured) {
+      // Update appointment status
       await db.collection('appointments').doc(id).update({ status: newStatus, updatedAt: now });
+
+      // Sync the slot availability
+      if (slotId) {
+        const slotRef = db.collection('availableSlots').doc(slotId);
+        const slotDoc = await slotRef.get();
+        if (slotDoc.exists) {
+          if (newStatus === 'cancelled') {
+            // Free the slot so others can book it
+            await slotRef.update({ isBooked: false, updatedAt: now });
+          } else if (newStatus === 'pending' || newStatus === 'confirmed') {
+            // Re-lock the slot if restoring from cancelled
+            await slotRef.update({ isBooked: true, updatedAt: now });
+          }
+        }
+      }
     } else {
+      // Mock mode
       const appts = JSON.parse(localStorage.getItem('mock_appointments') || '[]');
       const idx   = appts.findIndex(a => a.id === id);
       if (idx !== -1) { appts[idx].status = newStatus; appts[idx].updatedAt = now; }
       localStorage.setItem('mock_appointments', JSON.stringify(appts));
+
+      // Sync slot in mock storage
+      if (slotId) {
+        const slots = JSON.parse(localStorage.getItem('mock_slots') || '[]');
+        const si    = slots.findIndex(s => s.id === slotId);
+        if (si !== -1) {
+          slots[si].isBooked = newStatus !== 'cancelled';
+          localStorage.setItem('mock_slots', JSON.stringify(slots));
+        }
+      }
     }
 
+    // Update local array
     const idx2 = allAppointments.findIndex(a => a.id === id);
     if (idx2 !== -1) allAppointments[idx2].status = newStatus;
 
@@ -308,6 +463,7 @@ async function updateStatus(id, newStatus) {
     showStatus('فشل التحديث: ' + err.message, 'error');
   }
 }
+
 
 // =========================================================
 // Detail Modal

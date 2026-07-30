@@ -194,7 +194,10 @@
       </div>
       <span id="clinic-name">العيادة</span>
     </div>
-    <div style="display: flex; align-items: center; gap: 1rem;">
+    <div style="display: flex; align-items: center; gap: .75rem;">
+      <a href="cancel-booking.html" class="btn btn-secondary" style="padding:.5rem 1rem;font-size:.85rem;border-color:rgba(239,68,68,.4);color:var(--danger);">
+        <i class="fa-solid fa-ban"></i> إلغاء الحجز
+      </a>
       <a href="../admin/login.html" class="btn btn-secondary" style="padding:.5rem 1rem;font-size:.85rem; z-index: 10;">
         <i class="fa-solid fa-lock"></i> لوحة التحكم
       </a>
@@ -215,6 +218,14 @@
       <div class="step-pill"><i class="fa-solid fa-3"></i> حدد الموعد</div>
       <div class="step-pill"><i class="fa-solid fa-4"></i> أكد الحجز</div>
     </div>
+
+    <!-- Cancel booking quick link -->
+    <p class="fade-in delay-2" style="font-size:.85rem;color:var(--text-muted);margin-bottom:2rem;">
+      عندك حجز سابق؟
+      <a href="cancel-booking.html" style="color:var(--danger);font-weight:600;text-decoration:none;margin-right:.25rem;">
+        <i class="fa-solid fa-ban" style="margin-left:.2rem;"></i>إلغاء الحجز
+      </a>
+    </p>
 
     <!-- Quick stats -->
     <div class="stats-bar fade-in delay-2">

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إلغاء الحجز - العيادة</title>
+  <meta name="description" content="إلغاء موعدك في العيادة باستخدام رقم الحجز ورقم هاتفك">
+
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+  <style>
+    .portal-nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(11,15,25,.92); backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border-color);
+      padding: .9rem 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .portal-logo { display:flex;align-items:center;gap:.75rem;font-family:var(--font-display);font-size:1.2rem;font-weight:700;color:var(--text-primary);text-decoration:none; }
+    .portal-logo-icon { width:38px;height:38px;background:linear-gradient(135deg,var(--primary-color),var(--secondary-color));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;color:#fff; }
+
+    .cancel-wrapper {
+      max-width: 560px; margin: 0 auto;
+      padding: 3rem 1.5rem 5rem;
+    }
+
+    .page-icon {
+      width: 90px; height: 90px; border-radius: 50%;
+      background: rgba(239,68,68,.1);
+      border: 3px solid var(--danger);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.5rem; color: var(--danger);
+      margin: 0 auto 1.5rem;
+      animation: popIn .4s cubic-bezier(.16,1,.3,1) both;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    .page-title {
+      text-align: center;
+      font-family: var(--font-display); font-size: 1.8rem; font-weight: 800;
+      margin-bottom: .5rem;
+    }
+    .page-subtitle {
+      text-align: center; color: var(--text-muted); font-size: .95rem; margin-bottom: 2rem;
+    }
+
+    /* ---- Lookup form ---- */
+    .lookup-card { margin-bottom: 1.5rem; }
+    .lookup-card .form-group { margin-bottom: 1rem; }
+
+    /* ---- Result card ---- */
+    .result-card { display: none; }
+    .detail-row {
+      display: flex; align-items: center; gap: 1rem;
+      padding: .85rem 0; border-bottom: 1px solid var(--border-color);
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-icon { width:36px;height:36px;border-radius:9px;background:rgba(79,70,229,.1);color:var(--primary-color);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.9rem; }
+    .detail-label { font-size:.78rem;color:var(--text-muted); }
+    .detail-val   { font-weight:600;font-size:.95rem; }
+
+    .badge { display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .7rem;border-radius:99px;font-size:.75rem;font-weight:700; }
+    .badge-pending   { background:rgba(245,158,11,.12);color:var(--warning);border:1px solid rgba(245,158,11,.25); }
+    .badge-confirmed { background:rgba(79,70,229,.12);color:var(--primary-color);border:1px solid rgba(79,70,229,.25); }
+    .badge-completed { background:rgba(16,185,129,.12);color:var(--success);border:1px solid rgba(16,185,129,.25); }
+    .badge-cancelled { background:rgba(239,68,68,.1);color:var(--danger);border:1px solid rgba(239,68,68,.2); }
+
+    /* ---- Status/error bar ---- */
+    .status-bar { padding:.9rem 1.1rem;border-radius:10px;font-size:.9rem;margin-bottom:1.25rem;display:none; }
+    .status-bar.success { background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:var(--success); }
+    .status-bar.error   { background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--danger); }
+    .status-bar.info    { background:rgba(79,70,229,.08);border:1px solid rgba(79,70,229,.25);color:var(--primary-color); }
+
+    /* ---- Confirm cancel section ---- */
+    .confirm-cancel-box {
+      background: rgba(239,68,68,.06);
+      border: 1px solid rgba(239,68,68,.2);
+      border-radius: 12px; padding: 1.25rem;
+      margin-top: 1.25rem; display: none;
+      text-align: center;
+    }
+    .confirm-cancel-box p { color:var(--text-muted);font-size:.9rem;margin-bottom:1rem; }
+
+    /* ---- Cancelled success state ---- */
+    .cancelled-state { display:none; text-align:center; padding:2rem 0; }
+    .cancelled-icon { font-size:3.5rem;color:var(--danger);margin-bottom:1rem; }
+
+    @media(max-width:480px){
+      .cancel-wrapper { padding:1.5rem 1rem 3rem; }
+      .portal-logo span { display:none; }
+      .portal-nav { padding:.75rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="portal-nav">
+    <a href="index.html" class="portal-logo">
+      <div class="portal-logo-icon"><i class="fa-solid fa-hospital"></i></div>
+      <span id="clinic-name">العيادة</span>
+    </a>
+    <a href="index.html" class="btn btn-secondary" style="font-size:.85rem;padding:.5rem 1rem;">
+      <i class="fa-solid fa-house"></i> الرئيسية
+    </a>
+  </nav>
+
+  <div class="cancel-wrapper">
+
+    <!-- Page Header -->
+    <div class="page-icon">
+      <i class="fa-solid fa-calendar-xmark"></i>
+    </div>
+    <h1 class="page-title">إلغاء الحجز</h1>
+    <p class="page-subtitle">أدخل رقم حجزك ورقم هاتفك للبحث عن موعدك وإلغائه.</p>
+
+    <!-- Status Bar -->
+    <div id="page-status" class="status-bar"></div>
+
+    <!-- Lookup Form -->
+    <div class="card lookup-card" id="lookup-card">
+      <div class="form-group">
+        <label class="form-label" for="input-ref">
+          <i class="fa-solid fa-hashtag" style="color:var(--primary-color);margin-left:.3rem;"></i>
+          رقم الحجز المرجعي
+        </label>
+        <input type="text" id="input-ref" class="form-input"
+               placeholder="مثال: BK-A1B2C3"
+               style="font-family:monospace;font-size:1.05rem;letter-spacing:.08em;">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="input-phone">
+          <i class="fa-solid fa-phone" style="color:var(--primary-color);margin-left:.3rem;"></i>
+          رقم الهاتف المسجّل
+        </label>
+        <input type="tel" id="input-phone" class="form-input" placeholder="01xxxxxxxxx">
+      </div>
+      <button id="search-btn" class="btn btn-primary" style="width:100%;" onclick="searchAppointment()">
+        <i class="fa-solid fa-magnifying-glass"></i> البحث عن الحجز
+      </button>
+    </div>
+
+    <!-- Result Card (shown after successful lookup) -->
+    <div class="card result-card" id="result-card">
+      <h3 style="font-family:var(--font-display);font-size:1.1rem;margin-bottom:1rem;border-bottom:1px solid var(--border-color);padding-bottom:.75rem;">
+        <i class="fa-solid fa-calendar-check" style="color:var(--primary-color);margin-left:.5rem;"></i>
+        تفاصيل حجزك
+      </h3>
+
+      <div class="detail-row">
+        <div class="detail-icon"><i class="fa-solid fa-hashtag"></i></div>
+        <div><div class="detail-label">رقم الحجز</div><div class="detail-val" id="res-ref" style="font-family:monospace;">--</div></div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-icon"><i class="fa-solid fa-user-doctor"></i></div>
+        <div><div class="detail-label">الطبيب</div><div class="detail-val" id="res-doctor">--</div></div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-icon"><i class="fa-solid fa-calendar-day"></i></div>
+        <div><div class="detail-label">التاريخ</div><div class="detail-val" id="res-date">--</div></div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-icon"><i class="fa-solid fa-clock"></i></div>
+        <div><div class="detail-label">الوقت</div><div class="detail-val" id="res-time">--</div></div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-icon"><i class="fa-solid fa-circle-info"></i></div>
+        <div><div class="detail-label">الحالة</div><div class="detail-val" id="res-status">--</div></div>
+      </div>
+
+      <!-- Confirm Cancel Box (hidden until user clicks cancel) -->
+      <div class="confirm-cancel-box" id="confirm-cancel-box">
+        <i class="fa-solid fa-triangle-exclamation" style="font-size:2rem;color:var(--warning);margin-bottom:.75rem;"></i>
+        <p>هل أنت متأكد من إلغاء هذا الحجز؟<br>لا يمكن التراجع عن هذا الإجراء.</p>
+        <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="hideConfirmBox()">
+            <i class="fa-solid fa-arrow-right"></i> تراجع
+          </button>
+          <button class="btn btn-danger" id="confirm-cancel-btn" onclick="confirmCancel()">
+            <i class="fa-solid fa-ban"></i> نعم، إلغاء الحجز
+          </button>
+        </div>
+      </div>
+
+      <!-- Cancel Button -->
+      <div id="cancel-btn-wrap" style="margin-top:1.25rem;display:flex;gap:.75rem;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="resetForm()" style="flex:1;">
+          <i class="fa-solid fa-rotate-left"></i> بحث جديد
+        </button>
+        <button class="btn btn-danger" id="cancel-appt-btn" onclick="showConfirmBox()" style="flex:1;">
+          <i class="fa-solid fa-ban"></i> إلغاء الحجز
+        </button>
+      </div>
+    </div>
+
+    <!-- Cancelled Success State -->
+    <div class="card cancelled-state" id="cancelled-state">
+      <div class="cancelled-icon"><i class="fa-solid fa-circle-xmark"></i></div>
+      <h2 style="font-family:var(--font-display);font-size:1.5rem;margin-bottom:.5rem;">تم إلغاء الحجز</h2>
+      <p style="color:var(--text-muted);font-size:.95rem;margin-bottom:1.75rem;">
+        تم إلغاء حجزك بنجاح. يمكنك حجز موعد جديد في أي وقت.
+      </p>
+      <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
+        <a href="index.html" class="btn btn-primary">
+          <i class="fa-solid fa-calendar-plus"></i> حجز موعد جديد
+        </a>
+        <a href="index.html" class="btn btn-secondary">
+          <i class="fa-solid fa-house"></i> الرئيسية
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <footer style="margin-top:3rem;padding:1.5rem 1.5rem;border-top:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;font-size:.85rem;color:var(--text-muted);max-width:1100px;margin-left:auto;margin-right:auto;">
+    <div>© 2026. جميع الحقوق محفوظة. أحمد مراد</div>
+    <img src="../logo_sm.png" alt="Logo" style="max-height:32px;width:auto;object-fit:contain;">
+  </footer>
+
+  <script src="../js/env.js"></script>
+  <script src="../js/common.js"></script>
+  <script src="../js/theme.js"></script>
+  <script src="../js/cancel-booking.js"></script>
+</body>
+</html>
