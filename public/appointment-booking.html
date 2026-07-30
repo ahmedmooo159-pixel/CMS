@@ -35,11 +35,13 @@
       max-width: 1100px; margin: 0 auto; padding: 2rem 1.25rem 3rem;
       display: grid; grid-template-columns: 1fr 340px; gap: 1.75rem; align-items: start;
     }
+    
+    .booking-layout > div { min-width: 0; } /* Fix grid blowout from horizontal scroll */
 
     @media(max-width: 860px) {
       .booking-layout { grid-template-columns: 1fr; padding: 1rem .75rem 2.5rem; gap: 1.25rem; }
-      .doctor-sidebar { order: -1; }
-      .card, .doc-sidebar-card { padding: 1rem !important; }
+      .doctor-sidebar { order: -1; position: relative !important; top: auto !important; z-index: 1; max-width: 100%; box-sizing: border-box; }
+      .card, .doc-sidebar-card { padding: 1rem !important; max-width: 100%; box-sizing: border-box; overflow: hidden; }
     }
     @media(max-width: 480px) {
       .portal-nav { padding: .75rem; }

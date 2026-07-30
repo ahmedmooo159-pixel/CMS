@@ -7,7 +7,7 @@
 // Firebase Configuration
 const firebaseConfig = window.ENV && window.ENV.FIREBASE_CONFIG ? window.ENV.FIREBASE_CONFIG : {};
 
-let db, auth, storage;
+// let db, auth, storage;
 let isFirebaseConfigured = false;
 
 const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && window.location.protocol !== 'file:';
@@ -18,8 +18,8 @@ try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     auth = firebase.auth();
-    storage = firebase.storage();
-    window.storage = storage; // Fix C4
+    // storage = firebase.storage();
+    // window.storage = storage; // Fix C4
     isFirebaseConfigured = true;
     console.log("Firebase initialized successfully with project: clinc-mangment-system");
   } else {
@@ -86,11 +86,11 @@ function setupMockFirebase() {
     }
   };
 
-  storage = {
-    ref: () => ({
-      put: () => Promise.resolve({ ref: { getDownloadURL: () => Promise.resolve("https://placehold.co/150") } })
-    })
-  };
+  // storage = {
+  //   ref: () => ({
+  //     put: () => Promise.resolve({ ref: { getDownloadURL: () => Promise.resolve("https://placehold.co/150") } })
+  //   })
+  // };
 }
 
 // Base Path helper for GitHub Pages compatibility
