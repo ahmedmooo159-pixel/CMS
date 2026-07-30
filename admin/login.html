@@ -1,66 +1,335 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>تسجيل دخول الموظفين - نظام إدارة العيادة</title>
-  
-  <!-- CSS -->
+  <title>دخول الموظفين - نظام إدارة العيادة</title>
+
   <link rel="stylesheet" href="../css/style.css">
-  <link rel="stylesheet" href="../css/layout.css">
   <link rel="stylesheet" href="../css/components.css">
-  
-  <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Firebase SDK Compat -->
+
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-</head>
-<body class="flex align-center justify-center" style="padding: 1.5rem;">
 
-  <div class="card" style="width: 100%; max-width: 420px; padding: 2.5rem; background: linear-gradient(135deg, rgba(22, 28, 45, 0.9), rgba(15, 23, 42, 0.8));">
-    <div style="text-align: center; margin-bottom: 2.5rem;">
-      <div class="widget-icon" style="margin: 0 auto 1.25rem auto; width: 64px; height: 64px; font-size: 1.75rem;">
-        <i class="fa-solid fa-lock"></i>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      display: flex;
+      font-family: var(--font-body);
+      background: var(--bg-main);
+      color: var(--text-primary);
+    }
+
+    /* ─── LEFT PANEL — Hero ─────────────────────────────── */
+    .hero-panel {
+      flex: 1;
+      position: relative;
+      background: linear-gradient(145deg, #0c1a36 0%, #1d4ed8 60%, #0891b2 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 3rem 2.5rem;
+      overflow: hidden;
+      color: #fff;
+      text-align: center;
+    }
+
+    /* Animated bg circles */
+    .hero-panel::before,
+    .hero-panel::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.12;
+      animation: pulse 8s ease-in-out infinite;
+    }
+    .hero-panel::before {
+      width: 460px; height: 460px;
+      background: #fff;
+      top: -120px; left: -120px;
+      animation-delay: 0s;
+    }
+    .hero-panel::after {
+      width: 300px; height: 300px;
+      background: #0891b2;
+      bottom: -80px; right: -80px;
+      animation-delay: -4s;
+      opacity: 0.2;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.07); }
+    }
+
+    .hero-logo {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+      margin-bottom: 2rem;
+      position: relative;
+      z-index: 1;
+      animation: floatY 5s ease-in-out infinite;
+    }
+    @keyframes floatY {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-10px); }
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 1rem;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-subtitle {
+      font-size: 0.95rem;
+      opacity: 0.75;
+      max-width: 320px;
+      line-height: 1.7;
+      position: relative;
+      z-index: 1;
+      margin-bottom: 2rem;
+    }
+
+    .hero-features {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 280px;
+    }
+    .hero-feature {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 0.7rem 1rem;
+      font-size: 0.875rem;
+      backdrop-filter: blur(6px);
+    }
+    .hero-feature i {
+      font-size: 1rem;
+      color: #7dd3fc;
+    }
+
+    /* ─── RIGHT PANEL — Login Form ──────────────────────── */
+    .login-panel {
+      width: 440px;
+      min-width: 340px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 3rem 2.5rem;
+      background: var(--bg-card);
+      box-shadow: -8px 0 40px rgba(0,0,0,0.08);
+      overflow-y: auto;
+    }
+
+    .login-header {
+      margin-bottom: 2rem;
+    }
+    .login-header h1 {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      color: var(--text-primary);
+    }
+    .login-header p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      color: var(--text-primary);
+    }
+    .input-wrap {
+      position: relative;
+    }
+    .input-wrap i {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    .form-input {
+      width: 100%;
+      padding: 0.72rem 2.7rem 0.72rem 1rem;
+      border-radius: 10px;
+      border: 1.5px solid var(--border-color);
+      background: var(--bg-input);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      font-family: var(--font-body);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    .form-input:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(29,78,216,0.12);
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: linear-gradient(135deg, #1d4ed8, #0891b2);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      font-family: var(--font-body);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: opacity 0.2s, transform 0.15s;
+      margin-top: 0.5rem;
+    }
+    .btn-login:hover:not(:disabled) {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+    .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .error-banner {
+      display: none;
+      padding: 0.7rem 1rem;
+      border-radius: 8px;
+      background: rgba(220,38,38,0.08);
+      border: 1px solid rgba(220,38,38,0.2);
+      color: var(--danger);
+      font-size: 0.85rem;
+      margin-bottom: 1.25rem;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .error-banner.visible { display: flex; }
+
+    .login-footer {
+      margin-top: 2rem;
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .login-footer a {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+    .login-footer a:hover { text-decoration: underline; }
+
+    /* ─── Responsive ──── */
+    @media (max-width: 768px) {
+      html, body { overflow: auto; }
+      body { flex-direction: column; height: auto; }
+      .hero-panel {
+        padding: 2.5rem 1.5rem;
+        min-height: 280px;
+        flex: none;
+      }
+      .hero-panel::before { display: none; }
+      .hero-features { display: none; }
+      .hero-logo { width: 65px; height: 65px; margin-bottom: 1rem; }
+      .hero-title { font-size: 1.4rem; }
+      .login-panel {
+        width: 100%;
+        min-width: unset;
+        padding: 2rem 1.5rem;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Hero Panel ── -->
+  <div class="hero-panel">
+    <img src="../logo_sm.png" alt="شعار العيادة" class="hero-logo">
+    <h1 class="hero-title">نظام إدارة<br>العيادة الذكية</h1>
+    <p class="hero-subtitle">منصة متكاملة لإدارة المواعيد، الأطباء، والمرضى بكفاءة عالية واحترافية تامة.</p>
+
+    <div class="hero-features">
+      <div class="hero-feature">
+        <i class="fa-solid fa-calendar-check"></i>
+        <span>إدارة المواعيد والحجوزات</span>
       </div>
-      <h2 style="font-size: 1.75rem; margin-bottom: 0.5rem; font-family: var(--font-display);">دخول الموظفين</h2>
-      <p style="color: var(--text-muted); font-size: 0.9rem;">الرجاء تسجيل الدخول لحساب المدير أو موظف الاستقبال</p>
+      <div class="hero-feature">
+        <i class="fa-solid fa-user-doctor"></i>
+        <span>ملفات الأطباء والتخصصات</span>
+      </div>
+      <div class="hero-feature">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>تقارير وإحصائيات فورية</span>
+      </div>
+      <div class="hero-feature">
+        <i class="fa-brands fa-whatsapp"></i>
+        <span>إشعارات واتساب تلقائية</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Login Panel ── -->
+  <div class="login-panel">
+    <div class="login-header">
+      <h1>تسجيل الدخول</h1>
+      <p>أدخل بيانات حسابك للوصول إلى لوحة التحكم</p>
     </div>
 
-    <!-- Error/Alert Banner -->
-    <div id="login-error" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: var(--danger); font-size: 0.875rem; margin-bottom: 1.5rem;">
-      <i class="fa-solid fa-circle-exclamation" style="margin-left: 0.5rem;"></i>
+    <div id="login-error" class="error-banner">
+      <i class="fa-solid fa-circle-exclamation"></i>
       <span id="error-message">بيانات الدخول غير صحيحة.</span>
     </div>
 
     <form id="loginForm">
       <div class="form-group">
         <label for="email" class="form-label">البريد الإلكتروني</label>
-        <div style="position: relative;">
-          <i class="fa-solid fa-envelope" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
-          <input type="email" id="email" class="form-input" style="padding-right: 2.75rem; width: 100%;" placeholder="admin@clinic.com" required>
+        <div class="input-wrap">
+          <i class="fa-solid fa-envelope"></i>
+          <input type="email" id="email" class="form-input" placeholder="admin@clinic.com" required>
         </div>
       </div>
 
-      <div class="form-group" style="margin-bottom: 2rem;">
-        <div class="flex justify-between align-center">
-          <label for="password" class="form-label">كلمة المرور</label>
-        </div>
-        <div style="position: relative;">
-          <i class="fa-solid fa-key" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
-          <input type="password" id="password" class="form-input" style="padding-right: 2.75rem; width: 100%;" placeholder="••••••••" required>
+      <div class="form-group" style="margin-bottom: 1.75rem;">
+        <label for="password" class="form-label">كلمة المرور</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-key"></i>
+          <input type="password" id="password" class="form-input" placeholder="••••••••" required>
         </div>
       </div>
 
-      <button type="submit" id="login-submit-btn" class="btn btn-primary" style="width: 100%; gap: 0.75rem;">
-        تسجيل الدخول <i class="fa-solid fa-arrow-left" style="transform: scaleX(-1);"></i>
+      <button type="submit" id="login-submit-btn" class="btn-login">
+        <i class="fa-solid fa-right-to-bracket"></i>
+        دخول لوحة التحكم
       </button>
     </form>
 
-    <div style="margin-top: 2rem; text-align: center;">
-      <a href="../index.html" style="font-size: 0.875rem; color: var(--text-muted);"><i class="fa-solid fa-arrow-right"></i> العودة لبوابة الحجز</a>
+    <div class="login-footer">
+      <a href="../public/index.html"><i class="fa-solid fa-arrow-right"></i> العودة لبوابة الحجز</a>
     </div>
   </div>
 
