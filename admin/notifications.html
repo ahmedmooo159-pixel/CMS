@@ -214,6 +214,30 @@
     </main>
   </div>
 
+  <!-- Inquiry Modal -->
+  <div class="modal-overlay" id="inquiry-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;">
+    <div style="background:var(--bg-card);width:90%;max-width:500px;border-radius:12px;padding:1.5rem;box-shadow:0 10px 40px rgba(0,0,0,.2);">
+      <h3 style="font-family:var(--font-display);font-size:1.25rem;margin-bottom:1rem;">تفاصيل الاستفسار</h3>
+      
+      <div style="margin-bottom:1rem;background:var(--bg-input);padding:1rem;border-radius:8px;border:1px solid var(--border-color);max-height:200px;overflow-y:auto;">
+        <div style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem;">رسالة المريض:</div>
+        <div id="inquiry-full-message" style="font-size:.95rem;white-space:pre-wrap;color:var(--text-primary);"></div>
+      </div>
+
+      <div style="margin-bottom:1.5rem;">
+        <label style="display:block;font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem;">ردك (سيتم إرساله عبر واتساب):</label>
+        <textarea id="inquiry-reply-text" class="form-input" rows="4" placeholder="اكتب إجابتك هنا..." style="width:100%;"></textarea>
+      </div>
+
+      <div style="display:flex;gap:.75rem;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="document.getElementById('inquiry-modal').style.display='none'">إغلاق</button>
+        <button id="send-inquiry-wa-btn" class="btn" style="background:#25D366;color:#fff;border:none;">
+          <i class="fa-brands fa-whatsapp"></i> إرسال الرد
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="../js/env.js"></script>
   <script src="../js/common.js"></script>
   <script src="../js/data.js"></script>

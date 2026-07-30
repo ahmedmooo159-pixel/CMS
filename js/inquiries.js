@@ -50,11 +50,14 @@
           <i class="fa-brands fa-whatsapp"></i> ${item.phone}
         </a></td>
         <td>${subjectLabels[item.subject] || item.subjectLabel || item.subject}</td>
-        <td style="max-width:220px; white-space:pre-wrap; font-size:.8rem; color:var(--text-muted);">${window.escHtml ? window.escHtml(item.message) : item.message}</td>
+        <td style="max-width:200px; font-size:.8rem; color:var(--text-muted);">
+          <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${window.escHtml ? window.escHtml(item.message) : item.message}</div>
+        </td>
         <td style="font-size:.8rem;">${formatDate(item.createdAt)}</td>
         <td>${statusBadge(item.status || 'new')}</td>
         <td>
           <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
+            <button class="tbl-btn" style="color:#25D366;border-color:rgba(37,211,102,.3);" onclick="viewAndReplyInquiry('${item.id}')" title="عرض ورد"><i class="fa-solid fa-reply"></i> عرض ورد</button>
             ${item.status !== 'resolved' ? `<button class="tbl-btn" onclick="markInquiry('${item.id}', 'resolved')" title="تم الحل"><i class="fa-solid fa-circle-check"></i></button>` : ''}
             ${item.status === 'new' ? `<button class="tbl-btn" onclick="markInquiry('${item.id}', 'read')" title="تمييز مقروء"><i class="fa-solid fa-eye"></i></button>` : ''}
             <button class="tbl-btn" style="color:var(--danger);border-color:rgba(220,38,38,.3);" onclick="deleteInquiry('${item.id}')" title="حذف"><i class="fa-solid fa-trash"></i></button>
@@ -129,6 +132,44 @@
       allInquiries = allInquiries.filter(i => i.id !== id);
       applyFilters();
     } catch (err) { console.error('deleteInquiry error:', err); }
+  };
+
+  window.viewAndReplyInquiry = function(id) {
+    const item = allInquiries.find(i => i.id === id);
+    if (!item) return;
+
+    const msgEl = document.getElementById('inquiry-full-message');
+    if (msgEl) msgEl.textContent = item.message;
+
+    const replyTextEl = document.getElementById('inquiry-reply-text');
+    if (replyTextEl) replyTextEl.value = '';
+
+    const modal = document.getElementById('inquiry-modal');
+    if (modal) {
+      modal.style.display = 'flex';
+      
+      const sendBtn = document.getElementById('send-inquiry-wa-btn');
+      sendBtn.onclick = function() {
+        const answer = replyTextEl.value.trim();
+        const clinicName = document.querySelector('.sidebar-logo span')?.textContent || 'العيادة';
+        
+        let waText = `أهلاً وسهلاً بك في ${clinicName}،\nبخصوص استفساركم نود توضيح الآتي:\n\n${answer}`;
+        if (!answer) {
+          waText = `أهلاً وسهلاً بك في ${clinicName}،\nبخصوص استفساركم نود توضيح الآتي:\n\n`;
+        }
+        
+        const phone = item.phone.replace(/\D/g, '');
+        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(waText)}`, '_blank');
+        
+        // Auto-mark as resolved if not already
+        if (item.status !== 'resolved') {
+          window.markInquiry(id, 'resolved');
+        }
+        modal.style.display = 'none';
+      };
+    } else {
+      alert(item.message);
+    }
   };
 
   if (searchInput) searchInput.addEventListener('input', applyFilters);
