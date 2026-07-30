@@ -10,6 +10,8 @@ let allPatients     = [];
 let allDoctors      = [];
 let allSpecialties  = [];
 let filtered        = [];
+let lastVisiblePay  = null;
+let isLoadingMore   = false;
 
 let clinicName = 'العيادة';
 
@@ -60,6 +62,7 @@ async function loadLookups() {
   const load = async (col, key) => {
     if (window.isFirebaseConfigured) {
       const snap = await db.collection(col).get();
+      if (snap.size > 100) console.warn(`Warning: Fetched >100 docs in payments.js from ${col} without limit`);
       const arr  = [];
       snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
       return arr;
@@ -82,20 +85,71 @@ async function loadPayments() {
 
   try {
     if (window.isFirebaseConfigured) {
-      const snap = await db.collection('appointments').orderBy('createdAt','desc').get();
+      const snap = await db.collection('appointments').orderBy('createdAt','desc').limit(50).get();
       allAppointments = [];
+      lastVisiblePay = snap.docs[snap.docs.length - 1] || null;
       snap.forEach(d => allAppointments.push({ id: d.id, ...d.data() }));
     } else {
       const raw = JSON.parse(localStorage.getItem('mock_appointments') || '[]');
-      allAppointments = raw.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+      allAppointments = raw.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||'')).slice(0, 50);
+      lastVisiblePay = allAppointments.length === 50 ? true : null;
     }
 
     computeStats();
     buildChart();
     applyFilters();
+    toggleLoadMoreBtn();
   } catch (err) {
     console.error('loadPayments error:', err);
     showStatus('خطأ في التحميل: ' + err.message, 'error');
+  }
+}
+
+// =========================================================
+// Load More Payments
+// =========================================================
+async function loadMorePayments() {
+  if (isLoadingMore || !lastVisiblePay) return;
+  
+  isLoadingMore = true;
+  const btn = document.getElementById('load-more-btn');
+  if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...`;
+
+  try {
+    if (window.isFirebaseConfigured) {
+      const snap = await db.collection('appointments')
+        .orderBy('createdAt', 'desc')
+        .startAfter(lastVisiblePay)
+        .limit(50)
+        .get();
+
+      lastVisiblePay = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+      snap.forEach(d => allAppointments.push({ id: d.id, ...d.data() }));
+    } else {
+      const raw = JSON.parse(localStorage.getItem('mock_appointments') || '[]');
+      const sorted = raw.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+      const nextBatch = sorted.slice(allAppointments.length, allAppointments.length + 50);
+      allAppointments.push(...nextBatch);
+      lastVisiblePay = nextBatch.length === 50 ? true : null;
+    }
+
+    computeStats();
+    buildChart();
+    applyFilters();
+    toggleLoadMoreBtn();
+  } catch (err) {
+    console.error('loadMorePayments error:', err);
+    showStatus('خطأ في تحميل المزيد: ' + err.message, 'error');
+  } finally {
+    isLoadingMore = false;
+    if (btn) btn.innerHTML = `عرض المزيد`;
+  }
+}
+
+function toggleLoadMoreBtn() {
+  const btn = document.getElementById('load-more-btn');
+  if (btn) {
+    btn.style.display = lastVisiblePay ? 'inline-block' : 'none';
   }
 }
 

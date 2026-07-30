@@ -4,36 +4,67 @@
       "collectionGroup": "appointments",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "doctorId", "order": "ASCENDING" },
-        { "fieldPath": "appointmentDate", "order": "ASCENDING" }
+        { "fieldPath": "doctorId",       "order": "ASCENDING" },
+        { "fieldPath": "appointmentDate","order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "appointments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "appointmentDate","order": "ASCENDING" },
+        { "fieldPath": "status",         "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "appointments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "appointmentDate","order": "ASCENDING" },
+        { "fieldPath": "paymentStatus",  "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "appointments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "appointmentDate","order": "DESCENDING" },
+        { "fieldPath": "createdAt",      "order": "DESCENDING" }
       ]
     },
     {
       "collectionGroup": "specialties",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "isActive", "order": "ASCENDING" },
-        { "fieldPath": "displayOrder", "order": "ASCENDING" }
+        { "fieldPath": "isActive",      "order": "ASCENDING" },
+        { "fieldPath": "displayOrder",  "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "doctors",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "specialtyId", "order": "ASCENDING" },
-        { "fieldPath": "isActive", "order": "ASCENDING" }
+        { "fieldPath": "specialtyId",   "order": "ASCENDING" },
+        { "fieldPath": "isActive",      "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "availableSlots",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "doctorId", "order": "ASCENDING" },
-        { "fieldPath": "isBooked", "order": "ASCENDING" }
+        { "fieldPath": "doctorId",      "order": "ASCENDING" },
+        { "fieldPath": "isBooked",      "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "availableSlots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "doctorId",      "order": "ASCENDING" },
+        { "fieldPath": "isBooked",      "order": "ASCENDING" },
+        { "fieldPath": "date",          "order": "ASCENDING" }
       ]
     }
   ],
   "fieldOverrides": []
 }
-
-

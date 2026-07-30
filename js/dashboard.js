@@ -44,13 +44,27 @@ async function loadDashboardData() {
     let pendingPayments = 0;
 
     if (window.isFirebaseConfigured) {
-      // Fetch appointments from Firestore
-      const snapshot = await db.collection("appointments").get();
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      // Compute current month boundaries for a focused query
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+      const monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+
+      // Fetch only this month's appointments — enough for today stats & recent list
+      const snapshot = await db.collection("appointments")
+        .where("appointmentDate", ">=", monthStart)
+        .where("appointmentDate", "<=", monthEnd)
+        .orderBy("appointmentDate", "desc")
+        .get();
+
+      if (snapshot.size > 100) {
+        console.warn(`Warning: dashboard.js fetched ${snapshot.size} appointments this month — consider adding more granular filters.`);
+      }
+
       const docs = [];
       snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
-      
-      const todayStr = new Date().toISOString().split('T')[0];
-      
+
       docs.forEach(appt => {
         if (appt.appointmentDate === todayStr) {
           todayAppointments.push(appt);
@@ -62,7 +76,7 @@ async function loadDashboardData() {
           pendingPayments += appt.price || 0;
         }
       });
-      
+
       const patientsSnap = await db.collection("patients").get();
       let patientCount = 0;
       patientsSnap.forEach(() => patientCount++);

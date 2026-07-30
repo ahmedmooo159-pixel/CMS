@@ -10,6 +10,8 @@ let allDoctors      = [];
 let allPatients     = [];
 let allSpecialties  = [];
 let filtered        = [];
+let lastVisibleAppt = null;
+let isLoadingMore   = false;
 
 // ---- DOM ----
 const tbody      = document.getElementById('appt-tbody');
@@ -63,6 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadDoctors() {
   if (window.isFirebaseConfigured) {
     const snap = await db.collection('doctors').get();
+    if (snap.size > 100) console.warn('Warning: Fetched >100 docs in appointments.js from doctors without limit');
     allDoctors = [];
     snap.forEach(d => allDoctors.push({ id: d.id, ...d.data() }));
   } else {
@@ -77,6 +80,7 @@ async function loadDoctors() {
 async function loadSpecialties() {
   if (window.isFirebaseConfigured) {
     const snap = await db.collection('specialties').get();
+    if (snap.size > 100) console.warn('Warning: Fetched >100 docs in appointments.js from specialties without limit');
     allSpecialties = [];
     snap.forEach(d => allSpecialties.push({ id: d.id, ...d.data() }));
   } else {
@@ -87,6 +91,7 @@ async function loadSpecialties() {
 async function loadPatients() {
   if (window.isFirebaseConfigured) {
     const snap = await db.collection('patients').get();
+    if (snap.size > 100) console.warn('Warning: Fetched >100 docs in appointments.js from patients without limit');
     allPatients = [];
     snap.forEach(d => allPatients.push({ id: d.id, ...d.data() }));
   } else {
@@ -102,20 +107,70 @@ async function loadAppointments() {
 
   try {
     if (window.isFirebaseConfigured) {
-      const snap = await db.collection('appointments').orderBy('createdAt', 'desc').get();
+      const snap = await db.collection('appointments').orderBy('createdAt', 'desc').limit(50).get();
       allAppointments = [];
+      lastVisibleAppt = snap.docs[snap.docs.length - 1] || null;
       snap.forEach(d => allAppointments.push({ id: d.id, ...d.data() }));
     } else {
       const raw = JSON.parse(localStorage.getItem('mock_appointments') || '[]');
-      // Sort by createdAt desc
-      allAppointments = raw.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      // Sort by createdAt desc and paginate mock locally for test
+      allAppointments = raw.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 50);
+      lastVisibleAppt = allAppointments.length === 50 ? true : null; 
     }
 
     updateStats();
     applyFilters();
+    toggleLoadMoreBtn();
   } catch (err) {
     console.error('loadAppointments error:', err);
     tbody.innerHTML = `<tr class="empty-row"><td colspan="10" style="color:var(--danger);">خطأ في التحميل: ${err.message}</td></tr>`;
+  }
+}
+
+// =========================================================
+// Load More Appointments
+// =========================================================
+async function loadMoreAppointments() {
+  if (isLoadingMore || !lastVisibleAppt) return;
+  
+  isLoadingMore = true;
+  const btn = document.getElementById('load-more-btn');
+  if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...`;
+
+  try {
+    if (window.isFirebaseConfigured) {
+      const snap = await db.collection('appointments')
+        .orderBy('createdAt', 'desc')
+        .startAfter(lastVisibleAppt)
+        .limit(50)
+        .get();
+
+      lastVisibleAppt = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+      snap.forEach(d => allAppointments.push({ id: d.id, ...d.data() }));
+    } else {
+      const raw = JSON.parse(localStorage.getItem('mock_appointments') || '[]');
+      const sorted = raw.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      const nextBatch = sorted.slice(allAppointments.length, allAppointments.length + 50);
+      allAppointments.push(...nextBatch);
+      lastVisibleAppt = nextBatch.length === 50 ? true : null;
+    }
+
+    updateStats();
+    applyFilters();
+    toggleLoadMoreBtn();
+  } catch (err) {
+    console.error('loadMoreAppointments error:', err);
+    showStatus('خطأ في تحميل المزيد: ' + err.message, 'error');
+  } finally {
+    isLoadingMore = false;
+    if (btn) btn.innerHTML = `عرض المزيد`;
+  }
+}
+
+function toggleLoadMoreBtn() {
+  const btn = document.getElementById('load-more-btn');
+  if (btn) {
+    btn.style.display = lastVisibleAppt ? 'inline-block' : 'none';
   }
 }
 

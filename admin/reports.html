@@ -127,6 +127,27 @@
 
       <div id="reports-status" class="status-bar"></div>
 
+      <!-- Date Range Filter -->
+      <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;padding:1.1rem 1.25rem;margin-bottom:1.75rem;">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;">
+          <span style="font-size:.85rem;color:var(--text-muted);white-space:nowrap;"><i class="fa-regular fa-calendar-range" style="margin-left:.35rem;"></i>الفترة الزمنية:</span>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;flex:1;">
+            <button id="preset-today" class="btn btn-secondary" style="padding:.4rem .9rem;font-size:.82rem;" onclick="applyPreset('today')">اليوم</button>
+            <button id="preset-7days" class="btn btn-secondary" style="padding:.4rem .9rem;font-size:.82rem;" onclick="applyPreset('7days')">آخر 7 أيام</button>
+            <button id="preset-month" class="btn btn-primary"  style="padding:.4rem .9rem;font-size:.82rem;" onclick="applyPreset('month')">الشهر الحالي</button>
+            <button id="preset-all"   class="btn btn-secondary" style="padding:.4rem .9rem;font-size:.82rem;" onclick="applyPreset('all')">كل الوقت</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+            <label style="font-size:.82rem;color:var(--text-muted);">من:</label>
+            <input type="date" id="date-from" class="form-input" style="padding:.4rem .7rem;font-size:.82rem;min-width:145px;">
+            <label style="font-size:.82rem;color:var(--text-muted);">إلى:</label>
+            <input type="date" id="date-to" class="form-input" style="padding:.4rem .7rem;font-size:.82rem;min-width:145px;">
+            <button class="btn btn-secondary" style="padding:.4rem .9rem;font-size:.82rem;" onclick="applyCustomRange()"><i class="fa-solid fa-magnifying-glass"></i> تطبيق</button>
+          </div>
+        </div>
+        <div id="report-range-label" style="font-size:.78rem;color:var(--text-muted);margin-top:.6rem;"></div>
+      </div>
+
       <!-- Main Overview Cards -->
       <div class="reports-grid">
 

@@ -16,10 +16,12 @@ const DAYS_AR = [
 ];
 
 // ---- State ----
-let doctorsList     = [];
-let specialtiesList = [];
-let pendingDeleteId = null;
-let editingPhotoUrl = '';
+let doctorsList      = [];
+let specialtiesList  = [];
+let pendingDeleteId  = null;
+let editingPhotoUrl  = '';
+let lastVisibleDoc   = null;
+let isLoadingMoreDoc = false;
 
 // ---- DOM Refs ----
 const gridEl      = document.getElementById('doctors-grid');
@@ -96,6 +98,7 @@ async function loadSpecialties() {
   try {
     if (window.isFirebaseConfigured) {
       const snap = await db.collection('specialties').where('isActive', '==', true).get();
+      if (snap.size > 100) console.warn('Warning: Fetched >100 docs in doctors.js from specialties without limit');
       specialtiesList = [];
       snap.forEach(doc => specialtiesList.push({ id: doc.id, ...doc.data() }));
     } else {
@@ -126,13 +129,16 @@ async function loadDoctors() {
 
   try {
     if (window.isFirebaseConfigured) {
-      const snap = await db.collection('doctors').get();
+      const snap = await db.collection('doctors').limit(50).get();
       doctorsList = [];
+      lastVisibleDoc = snap.docs[snap.docs.length - 1] || null;
       snap.forEach(doc => doctorsList.push({ id: doc.id, ...doc.data() }));
     } else {
-      doctorsList = JSON.parse(localStorage.getItem('mock_doctors') || '[]');
+      doctorsList = JSON.parse(localStorage.getItem('mock_doctors') || '[]').slice(0, 50);
+      lastVisibleDoc = doctorsList.length === 50 ? true : null;
     }
     renderDoctors();
+    toggleLoadMoreDoctorsBtn();
   } catch (err) {
     console.error('loadDoctors error:', err);
     showStatus('حدث خطأ أثناء تحميل الأطباء: ' + err.message, 'error');
@@ -142,6 +148,47 @@ async function loadDoctors() {
         <h4>خطأ في التحميل</h4><p>${err.message}</p>
       </div>`;
   }
+}
+
+// =========================================================
+// Load More Doctors
+// =========================================================
+async function loadMoreDoctors() {
+  if (isLoadingMoreDoc || !lastVisibleDoc) return;
+
+  isLoadingMoreDoc = true;
+  const btn = document.getElementById('load-more-doctors-btn');
+  if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...`;
+
+  try {
+    if (window.isFirebaseConfigured) {
+      const snap = await db.collection('doctors')
+        .startAfter(lastVisibleDoc)
+        .limit(50)
+        .get();
+
+      lastVisibleDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+      snap.forEach(doc => doctorsList.push({ id: doc.id, ...doc.data() }));
+    } else {
+      const all = JSON.parse(localStorage.getItem('mock_doctors') || '[]');
+      const nextBatch = all.slice(doctorsList.length, doctorsList.length + 50);
+      doctorsList.push(...nextBatch);
+      lastVisibleDoc = nextBatch.length === 50 ? true : null;
+    }
+    renderDoctors();
+    toggleLoadMoreDoctorsBtn();
+  } catch (err) {
+    console.error('loadMoreDoctors error:', err);
+    showStatus('خطأ في تحميل المزيد: ' + err.message, 'error');
+  } finally {
+    isLoadingMoreDoc = false;
+    if (btn) btn.innerHTML = `عرض المزيد`;
+  }
+}
+
+function toggleLoadMoreDoctorsBtn() {
+  const btn = document.getElementById('load-more-doctors-btn');
+  if (btn) btn.style.display = lastVisibleDoc ? 'inline-block' : 'none';
 }
 
 // =========================================================
