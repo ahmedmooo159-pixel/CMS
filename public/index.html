@@ -75,23 +75,6 @@
       margin-bottom: 2.5rem;
     }
 
-    .hero-floating-logo {
-      position: absolute;
-      top: 50%; right: 10%;
-      transform: translateY(-50%) rotate(5deg);
-      width: clamp(70px, 15vw, 130px);
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-      z-index: 10;
-      animation: floatLogo 6s ease-in-out infinite;
-    }
-
-    @keyframes floatLogo {
-      0% { transform: translateY(-50%) rotate(5deg); }
-      50% { transform: translateY(-55%) rotate(10deg); }
-      100% { transform: translateY(-50%) rotate(5deg); }
-    }
-
     .step-pill {
       display: flex; align-items: center; gap: .5rem;
       background: rgba(255,255,255,.04);
@@ -105,7 +88,6 @@
     /* ---- Mobile responsive ---- */
     @media (max-width: 480px) {
       .portal-hero { padding: 2.5rem 1rem 2rem; }
-      .hero-floating-logo { top: 20px; right: 20px; transform: rotate(10deg); width: 60px; animation: none; }
       .stats-bar { padding: 1rem; gap: .75rem; }
       .stat-num { font-size: 1.4rem; }
       .specialties-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
@@ -117,6 +99,14 @@
       .specialties-grid { grid-template-columns: 1fr; }
       .step-pill { font-size: .75rem; }
     }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { opacity: 0; animation: fadeInUp 0.8s ease-out forwards; }
+    .delay-1 { animation-delay: 0.2s; }
+    .delay-2 { animation-delay: 0.4s; }
 
     /* ---- Specialties Section ---- */
     .section {
@@ -194,7 +184,7 @@
     .empty-state .empty-icon { font-size:3rem; margin-bottom:1rem; opacity:.4; }
   </style>
 </head>
-<body>
+<body class="dark-theme">
 
   <!-- Navbar -->
   <nav class="portal-nav">
@@ -204,18 +194,22 @@
       </div>
       <span id="clinic-name">العيادة</span>
     </div>
-    <a href="../admin/login.html" class="btn btn-secondary" style="padding:.5rem 1rem;font-size:.85rem;">
-      <i class="fa-solid fa-lock"></i> لوحة التحكم
-    </a>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <a href="../admin/login.html" class="btn btn-secondary" style="padding:.5rem 1rem;font-size:.85rem; z-index: 10;">
+        <i class="fa-solid fa-lock"></i> لوحة التحكم
+      </a>
+      <img src="../logo_sm.png" alt="Logo" style="max-height: 36px; width: auto; object-fit: contain; z-index: 1;">
+    </div>
   </nav>
 
   <!-- Hero -->
   <section class="portal-hero" style="position: relative; overflow: hidden;">
-    <img src="assets/logo.png" alt="AMCODE" class="hero-floating-logo">
-    <h1 class="hero-title">احجز موعدك<br><span id="hero-clinic-name">مع أفضل الأطباء</span></h1>
-    <p class="hero-subtitle" id="clinic-tagline">اختر تخصصك، حدد طبيبك، واحجز موعدك في ثوانٍ — بدون تسجيل.</p>
+    <div class="fade-in">
+      <h1 class="hero-title">احجز موعدك<br><span id="hero-clinic-name">مع أفضل الأطباء</span></h1>
+      <p class="hero-subtitle" id="clinic-tagline">اختر تخصصك، حدد طبيبك، واحجز موعدك في ثوانٍ — بدون تسجيل.</p>
+    </div>
 
-    <div class="hero-steps">
+    <div class="hero-steps fade-in delay-1">
       <div class="step-pill"><i class="fa-solid fa-1"></i> اختر التخصص</div>
       <div class="step-pill"><i class="fa-solid fa-2"></i> اختر الطبيب</div>
       <div class="step-pill"><i class="fa-solid fa-3"></i> حدد الموعد</div>
@@ -223,7 +217,7 @@
     </div>
 
     <!-- Quick stats -->
-    <div class="stats-bar">
+    <div class="stats-bar fade-in delay-2">
       <div class="stat-item">
         <div class="stat-num" id="stat-specialties">--</div>
         <div class="stat-label">تخصص طبي</div>
@@ -234,7 +228,7 @@
       </div>
       <div class="stat-item">
         <div class="stat-num" id="stat-slots">--</div>
-        <div class="stat-label">موعد متاح</div>
+        <div class="stat-label">موعد متاح (خلال أسبوع)</div>
       </div>
     </div>
   </section>

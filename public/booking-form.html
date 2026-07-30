@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
@@ -130,17 +130,22 @@
     .gender-option input { display:none; }
   </style>
 </head>
-<body>
+<body class="dark-theme">
 
   <!-- Navbar -->
   <nav class="portal-nav">
     <div class="portal-logo">
-      <img src="../logo_sm.png" alt="Logo" style="max-height: 38px; width: auto; object-fit: contain; margin-left: 0.5rem;">
+      <div class="portal-logo-icon" id="nav-logo-container">
+        <i class="fa-solid fa-hospital"></i>
+      </div>
       <span id="clinic-name">العيادة</span>
     </div>
-    <a id="back-btn" href="index.html" class="btn btn-secondary" style="padding:.5rem 1rem;font-size:.85rem;">
-      <i class="fa-solid fa-arrow-right"></i> الرجوع
-    </a>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <a id="back-btn" href="index.html" class="btn btn-secondary" style="padding:.5rem 1rem;font-size:.85rem; z-index: 10;">
+        <i class="fa-solid fa-arrow-right"></i> الرجوع
+      </a>
+      <img src="../logo_sm.png" alt="Logo" style="max-height: 36px; width: auto; object-fit: contain; z-index: 1;">
+    </div>
   </nav>
 
   <div style="max-width:1000px;margin:0 auto;padding:2rem 1.5rem .5rem;">
@@ -289,9 +294,9 @@
   <script src="../js/theme.js"></script>
   <script src="../js/booking.js"></script>
   <script src="../js/paymob.js"></script>
-<footer style="margin-top: 3rem; padding: 1.5rem 0; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
-  <div>Â© 2026 Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø¹ÙŠØ§Ø¯Ø©. Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ‚ Ù…Ø­ÙÙˆØ¸Ø©.</div>
-  <img src="../logo_sm.png" alt="Logo" style="max-height: 32px; width: auto; object-fit: contain;">
-</footer>
+  <footer style="margin-top: 3rem; padding: 1.5rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); max-width: 1100px; margin-left: auto; margin-right: auto;">
+    <div>© 2026 إدارة العيادة. جميع الحقوق محفوظة.</div>
+    <img src="../logo_sm.png" alt="Logo" style="max-height: 32px; width: auto; object-fit: contain;">
+  </footer>
 </body>
 </html>

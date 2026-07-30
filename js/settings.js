@@ -85,9 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const file = logoInput.files[0];
         if (file) {
           showStatus("جاري رفع الشعار الجديد...", "info");
-          const storageRef = window.storage.ref().child(`clinics/settings/logo_${Date.now()}`);
-          const uploadTask = await storageRef.put(file);
-          clinicSettings.logo = await uploadTask.ref.getDownloadURL();
+          clinicSettings.logo = await window.uploadImageToCloudinary(file);
         }
 
         // Save to Firestore

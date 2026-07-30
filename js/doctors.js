@@ -342,9 +342,7 @@ async function handleFormSubmit(e) {
     if (file) {
       if (window.isFirebaseConfigured) {
         showStatus('جاري رفع الصورة...', 'info');
-        const ref  = window.storage.ref().child(`doctors/${Date.now()}_${file.name}`);
-        const snap = await ref.put(file);
-        photoUrl   = await snap.ref.getDownloadURL();
+        photoUrl = await window.uploadImageToCloudinary(file);
       }
       // Mock mode: editingPhotoUrl is already base64
     }

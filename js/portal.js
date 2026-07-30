@@ -41,24 +41,50 @@ async function loadPortalData() {
     let specialties = [], doctors = [], slots = [];
 
     if (window.isFirebaseConfigured) {
+      const now = new Date();
+      const nextWeek = new Date();
+      nextWeek.setDate(now.getDate() + 7);
+
       const [specSnap, docSnap, slotSnap] = await Promise.all([
         db.collection('specialties').where('isActive', '==', true).orderBy('displayOrder').get(),
         db.collection('doctors').where('isActive', '==', true).get(),
-        db.collection('availableSlots').where('isBooked', '==', false).get()
+        db.collection('availableSlots')
+          .where('isBooked', '==', false)
+          .where('date', '>=', now.toISOString().split('T')[0])
+          .where('date', '<=', nextWeek.toISOString().split('T')[0])
+          .get()
       ]);
       specSnap.forEach(d => specialties.push({ id: d.id, ...d.data() }));
       docSnap.forEach(d => doctors.push({ id: d.id, ...d.data() }));
       slotSnap.forEach(d => slots.push({ id: d.id, ...d.data() }));
     } else {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const nextWeekStr = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       specialties = JSON.parse(localStorage.getItem('mock_specialties') || '[]').filter(s => s.isActive !== false);
       doctors     = JSON.parse(localStorage.getItem('mock_doctors') || '[]').filter(d => d.isActive !== false);
-      slots       = JSON.parse(localStorage.getItem('mock_slots') || '[]').filter(s => !s.isBooked);
+      slots       = JSON.parse(localStorage.getItem('mock_slots') || '[]').filter(s => !s.isBooked && s.date >= todayStr && s.date <= nextWeekStr);
     }
 
-    // Update stats
-    document.getElementById('stat-specialties').textContent = specialties.length;
-    document.getElementById('stat-doctors').textContent     = doctors.length;
-    document.getElementById('stat-slots').textContent       = slots.length > 999 ? '999+' : slots.length;
+    // Animate stats
+    function animateCount(id, target) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const duration = 1500;
+      const startTime = performance.now();
+      function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const current = Math.floor((1 - Math.pow(1 - progress, 4)) * target);
+        el.textContent = current;
+        if (progress < 1) requestAnimationFrame(update);
+        else el.textContent = target;
+      }
+      requestAnimationFrame(update);
+    }
+
+    animateCount('stat-specialties', specialties.length);
+    animateCount('stat-doctors', doctors.length);
+    animateCount('stat-slots', slots.length);
 
     // Render specialty cards
     if (specialties.length === 0) {

@@ -233,9 +233,7 @@ async function handleFormSubmit(e) {
     if (file) {
       if (window.isFirebaseConfigured) {
         showStatus('جاري رفع الأيقونة...', 'info');
-        const ref = window.storage.ref().child(`specialties/${Date.now()}_${file.name}`);
-        const snap = await ref.put(file);
-        iconUrl = await snap.ref.getDownloadURL();
+        iconUrl = await window.uploadImageToCloudinary(file);
       }
       // In mock mode, editingIconUrl is already the base64 data URI from FileReader
     }

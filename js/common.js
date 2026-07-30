@@ -134,3 +134,29 @@ window.db                  = db;
 window.auth                = auth;
 window.isFirebaseConfigured = isFirebaseConfigured;
 window.requireAdmin        = requireAdmin;
+
+// Cloudinary image upload helper
+async function uploadImageToCloudinary(file) {
+  const cloudName = window.ENV?.CLOUDINARY_CLOUD_NAME || 'nfzcflqv';
+  const uploadPreset = window.ENV?.CLOUDINARY_UPLOAD_PRESET || 'clinc_mangment_system';
+  
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', uploadPreset);
+  
+  try {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST',
+      body: formData
+    });
+    if (!res.ok) {
+      throw new Error('فشل رفع الصورة. يرجى المحاولة مرة أخرى.');
+    }
+    const data = await res.json();
+    return data.secure_url;
+  } catch (err) {
+    console.error('Cloudinary upload error:', err);
+    throw new Error('حدث خطأ أثناء رفع الصورة. تحقق من اتصالك بالإنترنت.');
+  }
+}
+window.uploadImageToCloudinary = uploadImageToCloudinary;
