@@ -37,6 +37,14 @@
     return `<span class="inquiry-status ${s.cls}">${s.label}</span>`;
   }
 
+  function formatPhoneForWA(phoneStr) {
+    let clean = (phoneStr || '').replace(/\D/g, '');
+    if (clean.startsWith('0')) {
+      clean = '20' + clean.slice(1);
+    }
+    return clean;
+  }
+
   function renderRows(list) {
     if (!list.length) {
       tbody.innerHTML = `<tr class="empty-row"><td colspan="7"><i class="fa-solid fa-inbox" style="font-size:2rem;opacity:.3;"></i><p style="margin-top:.75rem;">لا توجد استفسارات بعد.</p></td></tr>`;
@@ -46,7 +54,7 @@
     tbody.innerHTML = list.map(item => `
       <tr data-id="${item.id}">
         <td><strong>${window.escHtml ? window.escHtml(item.name) : item.name}</strong></td>
-        <td><a href="https://wa.me/${item.phone.replace(/\D/g,'')}" target="_blank" class="whatsapp-btn" style="font-size:.75rem;">
+        <td><a href="https://wa.me/${formatPhoneForWA(item.phone)}" target="_blank" class="whatsapp-btn" style="font-size:.75rem;">
           <i class="fa-brands fa-whatsapp"></i> ${item.phone}
         </a></td>
         <td>${subjectLabels[item.subject] || item.subjectLabel || item.subject}</td>
@@ -158,8 +166,8 @@
           waText = `أهلاً وسهلاً بك في ${clinicName}،\nبخصوص استفساركم نود توضيح الآتي:\n\n`;
         }
         
-        const phone = item.phone.replace(/\D/g, '');
-        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(waText)}`, '_blank');
+        const waPhone = formatPhoneForWA(item.phone);
+        window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(waText)}`, '_blank');
         
         // Auto-mark as resolved if not already
         if (item.status !== 'resolved') {
