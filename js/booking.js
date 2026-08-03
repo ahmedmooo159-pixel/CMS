@@ -205,8 +205,7 @@ async function saveAppointment(patient, notes, paymentMethod, paymentStatus, pay
     const existingPatient = await window.dataService.findPatientByPhone(patient.phone);
     if (existingPatient) {
       patientId = existingPatient.id;
-      // Optionally update name if changed
-      await db.collection('patients').doc(patientId).update({ updatedAt: now });
+      // Note: We don't update the patient doc here because public users shouldn't have update permissions.
     } else {
       const pDoc = await db.collection('patients').add({
         ...patient,
