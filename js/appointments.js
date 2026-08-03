@@ -194,22 +194,24 @@ async function autoCleanupExpiredAppointments(forceRun = false) {
   const lastRun     = localStorage.getItem(storageKey);
 
   // Skip if already ran today (unless forced)
+  // NOTE: We use a timestamp-based key so we re-run if time advances past midnight
   if (!forceRun && lastRun === todayStr) return;
 
   try {
     let expiredAppts = [];
 
     if (window.isFirebaseConfigured) {
-      // Query: pending or confirmed AND date < today
+      // Query: pending or confirmed AND date <= today
+      // This catches appointments from today AND earlier that were never acted upon.
       // Firestore can't do OR natively, so we run two queries
       const [pendingSnap, confirmedSnap] = await Promise.all([
         db.collection('appointments')
           .where('status', '==', 'pending')
-          .where('appointmentDate', '<', todayStr)
+          .where('appointmentDate', '<=', todayStr)
           .get(),
         db.collection('appointments')
           .where('status', '==', 'confirmed')
-          .where('appointmentDate', '<', todayStr)
+          .where('appointmentDate', '<=', todayStr)
           .get()
       ]);
 
@@ -255,7 +257,7 @@ async function autoCleanupExpiredAppointments(forceRun = false) {
 
       appts.forEach(appt => {
         if ((appt.status === 'pending' || appt.status === 'confirmed')
-            && appt.appointmentDate && appt.appointmentDate < todayStr) {
+            && appt.appointmentDate && appt.appointmentDate <= todayStr) {
           appt.status      = 'cancelled';
           appt.updatedAt   = now;
           appt.cancelledBy = 'auto_expired';
