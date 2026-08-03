@@ -201,22 +201,25 @@ async function autoCleanupExpiredAppointments(forceRun = false) {
     let expiredAppts = [];
 
     if (window.isFirebaseConfigured) {
-      // Query: pending or confirmed AND date <= today
-      // This catches appointments from today AND earlier that were never acted upon.
-      // Firestore can't do OR natively, so we run two queries
+      // Query by status only (single-field — no composite index required).
+      // Then filter appointmentDate <= today in JS.
+      // This avoids the "index required" Firestore error while the composite
+      // index in firestore.indexes.json is still being built / deployed.
       const [pendingSnap, confirmedSnap] = await Promise.all([
-        db.collection('appointments')
-          .where('status', '==', 'pending')
-          .where('appointmentDate', '<=', todayStr)
-          .get(),
-        db.collection('appointments')
-          .where('status', '==', 'confirmed')
-          .where('appointmentDate', '<=', todayStr)
-          .get()
+        db.collection('appointments').where('status', '==', 'pending').get(),
+        db.collection('appointments').where('status', '==', 'confirmed').get()
       ]);
 
-      pendingSnap.forEach(d   => expiredAppts.push({ id: d.id, ...d.data() }));
-      confirmedSnap.forEach(d => expiredAppts.push({ id: d.id, ...d.data() }));
+      pendingSnap.forEach(d => {
+        const data = d.data();
+        if (data.appointmentDate && data.appointmentDate <= todayStr)
+          expiredAppts.push({ id: d.id, ...data });
+      });
+      confirmedSnap.forEach(d => {
+        const data = d.data();
+        if (data.appointmentDate && data.appointmentDate <= todayStr)
+          expiredAppts.push({ id: d.id, ...data });
+      });
 
       if (expiredAppts.length === 0) {
         localStorage.setItem(storageKey, todayStr);
