@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
@@ -186,7 +186,7 @@
             <i class="fa-solid fa-user" style="color:var(--primary-color);margin-left:.5rem;"></i> البيانات الشخصية
           </h3>
 
-          <div class="grid gap-4" style="grid-template-columns:1fr 1fr;" class="name-grid">
+          <div class="grid grid-cols-2 md-grid-cols-1 gap-4">
             <div class="form-group" style="grid-column: auto;">
               <label for="patientFirstName" class="form-label">الاسم الأول <span style="color:var(--danger)">*</span></label>
               <input type="text" id="patientFirstName" class="form-input" placeholder="محمد" required>
@@ -196,7 +196,6 @@
               <input type="text" id="patientLastName" class="form-input" placeholder="أحمد" required>
             </div>
           </div>
-          <style>@media(max-width:400px){.name-grid{grid-template-columns:1fr!important;}}</style>
 
           <div class="form-group">
             <label for="patientPhone" class="form-label">رقم الهاتف <span style="color:var(--danger)">*</span></label>

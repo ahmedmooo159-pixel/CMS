@@ -266,19 +266,19 @@
       <div id="ticket-status" style="display:none; padding:.75rem 1rem; border-radius:8px; font-size:.9rem; margin-bottom:1rem;"></div>
 
       <form id="contactTicketForm">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+        <div class="grid grid-cols-2 md-grid-cols-1 gap-4" style="margin-bottom: 1rem;">
           <div>
             <label style="display:block; font-size:.85rem; font-weight:600; margin-bottom:.4rem;">الاسم الكامل <span style="color:var(--danger)">*</span></label>
-            <input type="text" id="ticket-name" placeholder="اكتب اسمك" style="width:100%; padding:.65rem .9rem; border-radius:9px; border:1.5px solid var(--border-color); background:var(--bg-input); color:var(--text-primary); font-family:var(--font-body); font-size:.9rem; outline:none;" required>
+            <input type="text" id="ticket-name" class="form-input" placeholder="اكتب اسمك" style="width:100%;" required>
           </div>
           <div>
             <label style="display:block; font-size:.85rem; font-weight:600; margin-bottom:.4rem;">رقم الهاتف <span style="color:var(--danger)">*</span></label>
-            <input type="tel" id="ticket-phone" placeholder="مثال: 01012345678" style="width:100%; padding:.65rem .9rem; border-radius:9px; border:1.5px solid var(--border-color); background:var(--bg-input); color:var(--text-primary); font-family:var(--font-body); font-size:.9rem; outline:none;" required>
+            <input type="tel" id="ticket-phone" class="form-input" placeholder="مثال: 01012345678" style="width:100%;" required>
           </div>
         </div>
         <div style="margin-bottom: 1rem;">
           <label style="display:block; font-size:.85rem; font-weight:600; margin-bottom:.4rem;">موضوع الاستفسار</label>
-          <select id="ticket-subject" style="width:100%; padding:.65rem .9rem; border-radius:9px; border:1.5px solid var(--border-color); background:var(--bg-input); color:var(--text-primary); font-family:var(--font-body); font-size:.9rem; outline:none;">
+          <select id="ticket-subject" class="form-input" style="width:100%;">
             <option value="booking">استفسار عن الحجز</option>
             <option value="price">استفسار عن الأسعار</option>
             <option value="doctor">الاستفسار عن طبيب</option>
@@ -288,7 +288,7 @@
         </div>
         <div style="margin-bottom: 1.25rem;">
           <label style="display:block; font-size:.85rem; font-weight:600; margin-bottom:.4rem;">رسالتك <span style="color:var(--danger)">*</span></label>
-          <textarea id="ticket-message" rows="4" placeholder="اكتب استفسارك أو رسالتك هنا..." style="width:100%; padding:.65rem .9rem; border-radius:9px; border:1.5px solid var(--border-color); background:var(--bg-input); color:var(--text-primary); font-family:var(--font-body); font-size:.9rem; outline:none; resize:vertical;" required></textarea>
+          <textarea id="ticket-message" class="form-input" rows="4" placeholder="اكتب استفسارك أو رسالتك هنا..." style="width:100%; resize:vertical;" required></textarea>
         </div>
         <button type="submit" id="ticket-submit-btn" style="width:100%; padding:.8rem 1rem; background:linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color:#fff; border:none; border-radius:10px; font-size:.95rem; font-weight:700; font-family:var(--font-body); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:.6rem; transition:opacity .2s;">
           <i class="fa-solid fa-paper-plane"></i> إرسال الرسالة
