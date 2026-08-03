@@ -20,6 +20,14 @@
       "collectionGroup": "appointments",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "status",         "order": "ASCENDING" },
+        { "fieldPath": "appointmentDate","order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "appointments",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "appointmentDate","order": "ASCENDING" },
         { "fieldPath": "paymentStatus",  "order": "ASCENDING" }
       ]
