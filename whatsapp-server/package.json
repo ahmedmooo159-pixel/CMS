@@ -1,0 +1,15 @@
+{
+  "name": "cms-whatsapp-server",
+  "version": "1.0.0",
+  "description": "WhatsApp Automated Message Gateway for Clinic Management System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.6.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
