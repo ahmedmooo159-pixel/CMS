@@ -142,3 +142,48 @@ exports.paymobCallback = functions.https.onRequest(async (req, res) => {
 
   res.status(200).send('OK');
 });
+
+// =========================================================
+// Automated WhatsApp Message Trigger
+// =========================================================
+exports.onAppointmentCreated = functions.firestore
+  .document("appointments/{appointmentId}")
+  .onCreate(async (snap, context) => {
+    const appt = snap.data();
+    if (!appt || !appt.patientPhone) return null;
+
+    const patientName = appt.patientName || "عزيزنا المريض";
+    const bookingRef  = appt.bookingRef   || snap.id;
+    const date        = appt.appointmentDate || "";
+    const time        = appt.appointmentTime || "";
+    const queueNum    = appt.queueNumber ? `#${appt.queueNumber}` : "#1";
+
+    const radarUrl = `https://clinic-mangment-system.web.app/public/queue-radar.html?ref=${bookingRef}`;
+
+    const message = 
+      `أهلاً بك أستاذ/ة ${patientName} 🌸\n` +
+      `تم تأكيد حجز موعدك بنجاح في العيادة.\n\n` +
+      `📌 رقم الحجز: ${bookingRef}\n` +
+      `📅 التاريخ: ${date}\n` +
+      `⏰ الوقت: ${time}\n` +
+      `🔢 رقم دورك في القائمة: ${queueNum}\n\n` +
+      `📡 يمكنك تتبع دورك والوقت المتوقع لدخولك حياً ومباشرة عبر رادار الانتظار:\n${radarUrl}\n\n` +
+      `نتمنى لك دوام الصحة والعافية! 🏥`;
+
+    try {
+      const WHATSAPP_GATEWAY_URL = process.env.WHATSAPP_GATEWAY_URL || "http://localhost:3001/send-whatsapp";
+      await fetch(WHATSAPP_GATEWAY_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: appt.patientPhone,
+          message: message
+        })
+      });
+      console.log(`Automated WhatsApp triggered for appointment ${bookingRef}`);
+    } catch (err) {
+      console.error("Failed to send automated WhatsApp message:", err);
+    }
+    return null;
+  });
+

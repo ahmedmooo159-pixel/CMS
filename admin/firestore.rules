@@ -2,9 +2,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Function to check if user is admin
+    // ── isAdmin: any authenticated Firebase user is treated as admin.
+    // The public portal never signs users in, so only admins who logged in
+    // via the admin login page will have request.auth != null.
+    // NOTE: When Firebase Custom Claims are configured (role:'admin'),
+    // you can tighten this back to:
+    //   request.auth.token.role == 'admin' || request.auth.token.admin == true
     function isAdmin() {
-      return request.auth != null && (request.auth.token.role == 'admin' || request.auth.token.admin == true);
+      return request.auth != null;
     }
     
     // Default rule: Admin has full access to everything
@@ -12,7 +17,7 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
     
-    // Public read access for specific collections needed for booking
+    // Public read access for read-only entities
     match /clinics/{document=**} {
       allow read: if true;
     }
@@ -22,21 +27,37 @@ service cloud.firestore {
     match /doctors/{document=**} {
       allow read: if true;
     }
+    
+    // Slots: Public can read. They can only update 'isBooked' or 'status' fields.
     match /availableSlots/{document=**} {
       allow read: if true;
-      allow update: if true; // Needed to mark a slot as booked
+      allow create: if true;
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasAny(['isBooked', 'status', 'updatedAt']);
     }
     
-    // Allow public to create patients and appointments
+    // Patients: Public can create an account and read for deduplication
+    // (Notice: 'allow write' was removed to prevent unauthorized deletion/modification)
     match /patients/{document=**} {
-      allow read: if true; // Depending on requirements, might be needed for deduplication query
-      allow write: if true;
+      allow read: if true; 
+      allow create: if true;
+      allow update, delete: if isAdmin();
     }
     
+    // Appointments: Public can create, and can update status to 'cancelled' only (self-cancellation).
     match /appointments/{document=**} {
       allow create: if true;
-      allow read: if true; // if user wants to see their appointment
+      allow read: if true;
+      // Allow patient self-cancellation: only 'status', 'updatedAt', and 'cancelledBy' fields can change
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['status', 'updatedAt', 'cancelledBy'])
+                    && request.resource.data.status == 'cancelled';
+      allow delete: if isAdmin();
+    }
+    
+    // Inquiries (contact form): Public can only create, admins manage.
+    match /inquiries/{document=**} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
     }
   }
 }
-

@@ -313,6 +313,25 @@ async function saveAppointment(patient, notes, paymentMethod, paymentStatus, pay
   };
   sessionStorage.setItem('booking_confirmation', JSON.stringify(confData));
 
+  // Trigger local WhatsApp Gateway if running
+  try {
+    const radarUrl = `${window.location.origin}${window.BASE_PATH || ''}/public/queue-radar.html?ref=${ref}`;
+    const msg = `أهلاً بك أستاذ/ة ${patient.firstName} ${patient.lastName} 🌸\n` +
+      `تم تأكيد حجز موعدك بنجاح في العيادة.\n\n` +
+      `📌 رقم الحجز: ${ref}\n` +
+      `📅 التاريخ: ${slotDate}\n` +
+      `⏰ الوقت: ${slotStart}\n` +
+      `🔢 رقم دورك: #${queueNumber}\n\n` +
+      `📡 يمكنك تتبع دورك والوقت المتوقع لدخولك حياً ومباشرة عبر رادار الانتظار:\n${radarUrl}\n\n` +
+      `نتمنى لك دوام الصحة والعافية! 🏥`;
+
+    fetch('http://localhost:3001/send-whatsapp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: patient.phone, message: msg })
+    }).catch(() => {/* Gateway off — ignore */});
+  } catch (_) {}
+
   // 5. Redirect to confirmation
   window.location.href = 'confirmation.html';
 }
