@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>رادار الانتظار الحي | نظام العيادات</title>
+  <!-- Google Fonts & Font Awesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  
+  <script src="../js/env.js"></script>
+  <script src="../js/common.js"></script>
+  
+  <style>
+    :root {
+      --primary-color: #0284c7;
+      --primary-dark: #0369a1;
+      --secondary-color: #0d9488;
+      --accent-color: #f59e0b;
+      --bg-dark: #0f172a;
+      --bg-card: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --danger-color: #ef4444;
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --font-main: 'Cairo', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-main);
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(2, 132, 199, 0.15), transparent 70%),
+        radial-gradient(circle at 100% 100%, rgba(13, 148, 136, 0.1), transparent 50%);
+    }
+
+    .radar-container {
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* Top Brand Bar */
+    .header-bar {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .header-bar img { height: 48px; margin-bottom: .5rem; }
+    .header-title { font-size: 1.5rem; font-weight: 800; color: #fff; }
+    .header-subtitle { color: var(--text-muted); font-size: 0.9rem; }
+
+    /* Main Status Card */
+    .status-card {
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-lg);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Glowing Pulse effect */
+    .radar-pulse {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 1.5rem;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(2,132,199,0.3) 0%, rgba(2,132,199,0) 70%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .radar-pulse::before, .radar-pulse::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 2px solid var(--primary-color);
+      animation: ripple 2s linear infinite;
+      opacity: 0;
+    }
+    .radar-pulse::after { animation-delay: 1s; }
+
+    @keyframes ripple {
+      0% { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+
+    .pulse-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      color: white;
+      box-shadow: 0 0 20px rgba(2, 132, 199, 0.5);
+      z-index: 2;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.4rem 1.2rem;
+      border-radius: 50px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+    .badge-pending   { background: rgba(245, 158, 11, 0.2); color: var(--warning-color); border: 1px solid var(--warning-color); }
+    .badge-confirmed { background: rgba(2, 132, 199, 0.2); color: var(--primary-color); border: 1px solid var(--primary-color); }
+    .badge-arrived   { background: rgba(13, 148, 136, 0.2); color: var(--secondary-color); border: 1px solid var(--secondary-color); }
+    .badge-in_session{ background: rgba(16, 185, 129, 0.2); color: var(--success-color); border: 1px solid var(--success-color); animation: blink 1.5s infinite; }
+    .badge-completed { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); border: 1px solid var(--text-muted); }
+    .badge-cancelled { background: rgba(239, 68, 68, 0.2); color: var(--danger-color); border: 1px solid var(--danger-color); }
+
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+    .queue-number-box {
+      margin: 1.5rem 0;
+    }
+    .queue-label { font-size: 0.95rem; color: var(--text-muted); }
+    .queue-number {
+      font-family: 'Outfit', sans-serif;
+      font-size: 4.5rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #fff, #93c5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+      margin: 0.2rem 0;
+    }
+
+    /* ETA Grid */
+    .eta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .eta-card {
+      background: rgba(15, 23, 42, 0.6);
+      padding: 1rem;
+      border-radius: var(--radius-md);
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .eta-card .val { font-size: 1.4rem; font-weight: 800; color: #fff; margin-top: .2rem; }
+    .eta-card .lbl { font-size: 0.8rem; color: var(--text-muted); }
+
+    /* Timeline Queue Visualizer */
+    .timeline-card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .timeline-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #cbd5e1;
+    }
+
+    .queue-step {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.8rem 1rem;
+      border-radius: 12px;
+      margin-bottom: 0.6rem;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid transparent;
+      transition: all 0.3s ease;
+    }
+    .queue-step.active {
+      background: rgba(2, 132, 199, 0.15);
+      border-color: rgba(2, 132, 199, 0.4);
+    }
+    .step-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+    }
+    .active .step-icon { background: var(--primary-color); color: #fff; }
+
+    /* Action Buttons */
+    .action-btn {
+      width: 100%;
+      padding: 1rem;
+      border-radius: 16px;
+      border: none;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: transform 0.2s, filter 0.2s;
+      text-decoration: none;
+    }
+    .btn-whatsapp {
+      background: #25D366;
+      color: #fff;
+      margin-bottom: 0.8rem;
+    }
+    .btn-whatsapp:hover { filter: brightness(1.1); transform: translateY(-2px); }
+    .btn-secondary {
+      background: rgba(255,255,255,0.08);
+      color: var(--text-main);
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+  </style>
+</head>
+<body>
+
+  <div class="radar-container">
+    <!-- Header -->
+    <div class="header-bar">
+      <div style="font-size:2rem;color:var(--primary-color);margin-bottom:.3rem;"><i class="fa-solid fa-satellite-dish"></i></div>
+      <div class="header-title">رادار الانتظار الحي</div>
+      <div class="header-subtitle" id="clinic-name-subtitle">تتبع مباشر وحي لدورك في العيادة</div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="status-card" id="main-status-card">
+      <div class="radar-pulse">
+        <div class="pulse-icon" id="pulse-icon"><i class="fa-solid fa-clock"></i></div>
+      </div>
+
+      <div class="status-badge badge-confirmed" id="status-badge">جاري التحميل...</div>
+
+      <div class="queue-number-box">
+        <div class="queue-label">رقم دورك في القائمة</div>
+        <div class="queue-number" id="queue-number">--</div>
+      </div>
+
+      <div id="patient-name-display" style="font-weight:700;font-size:1.1rem;color:#e2e8f0;margin-bottom:.5rem;"></div>
+      <div id="doctor-name-display" style="font-size:0.9rem;color:var(--text-muted);"></div>
+
+      <!-- ETA & Traffic Grid -->
+      <div class="eta-grid">
+        <div class="eta-card">
+          <div class="lbl"><i class="fa-solid fa-hourglass-half"></i> الوقت المتوقع لدخولك</div>
+          <div class="val" id="eta-time">--:--</div>
+        </div>
+        <div class="eta-card">
+          <div class="lbl"><i class="fa-solid fa-users"></i> المتبقي أمامك</div>
+          <div class="val" id="patients-ahead">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Step Timeline -->
+    <div class="timeline-card">
+      <div class="timeline-title"><i class="fa-solid fa-list-check"></i> حالة دورك الآن:</div>
+      
+      <div class="queue-step" id="step-booked">
+        <div class="step-icon"><i class="fa-solid fa-calendar-check"></i></div>
+        <div>
+          <div style="font-weight:700;">تم تأكيد الحجز</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);" id="step-booked-sub">الموعد مؤكد في النظام</div>
+        </div>
+      </div>
+
+      <div class="queue-step" id="step-arrived">
+        <div class="step-icon"><div style="font-size:0.8rem;">📍</div></div>
+        <div>
+          <div style="font-weight:700;">وصول العيادة</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);" id="step-arrived-sub">تسجيل الدخول في صالة الانتظار</div>
+        </div>
+      </div>
+
+      <div class="queue-step" id="step-session">
+        <div class="step-icon"><i class="fa-solid fa-stethoscope"></i></div>
+        <div>
+          <div style="font-weight:700;">دخول الطبيب (الكشف)</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);" id="step-session-sub">في حالة الدخول للكشف الآن</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <a href="#" id="whatsapp-share-btn" class="action-btn btn-whatsapp" target="_blank">
+      <i class="fa-brands fa-whatsapp"></i> مشاركة التتبع عبر واتساب
+    </a>
+
+    <a href="index.html" class="action-btn btn-secondary">
+      <i class="fa-solid fa-house"></i> العودة للصفحة الرئيسية
+    </a>
+  </div>
+
+  <script src="../js/queue-radar.js"></script>
+</body>
+</html>
