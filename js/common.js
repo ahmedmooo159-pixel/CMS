@@ -7,7 +7,7 @@
 // Firebase Configuration
 const firebaseConfig = window.ENV && window.ENV.FIREBASE_CONFIG ? window.ENV.FIREBASE_CONFIG : {};
 
-// let db, auth, storage;
+ let db, auth;
 let isFirebaseConfigured = false;
 
 const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && window.location.protocol !== 'file:';
@@ -18,7 +18,6 @@ try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     auth = firebase.auth();
-    window.storage = storage; // Fix C4
     isFirebaseConfigured = true;
     console.log("Firebase initialized successfully with project: clinc-mangment-system");
   } else {
