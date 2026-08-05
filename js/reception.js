@@ -11,6 +11,7 @@ let allDoctors   = [];
 let allPatients  = [];
 let activeDocFilter = 'all';
 let refreshTimer = null;
+let unsubscribeQueue = null;
 let clinicName   = 'العيادة';
 
 // ---- Status config ----
@@ -22,6 +23,48 @@ const RECEPTION_STATUSES = {
   completed:  { label:'مكتملة',       badge:'badge-done',       icon:'fa-circle-check' },
   cancelled:  { label:'ملغي',          badge:'badge-cancelled',  icon:'fa-ban' },
 };
+
+// =========================================================
+// Real-time Queue Listener (بدل polling كل 30 ثانية)
+// =========================================================
+function startQueueListener() {
+  if (!window.isFirebaseConfigured) {
+    // Mock mode: استخدم polling
+    loadQueue();
+    refreshTimer = setInterval(loadQueue, 30000);
+    return;
+  }
+
+  // Real Firebase: استخدم real-time listener
+  unsubscribeQueue = db.collection('appointments')
+    .where('appointmentDate', '==', todayStr)
+    .onSnapshot(
+      (snapshot) => {
+        let raw = [];
+        snapshot.forEach(doc => {
+          raw.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Sort by queue number
+        raw.sort((a, b) => {
+          if (a.queueNumber && b.queueNumber) return a.queueNumber - b.queueNumber;
+          return (a.appointmentTime || '').localeCompare(b.appointmentTime || '');
+        });
+
+        appointments = raw;
+        renderTabs();
+        renderQueue();
+        if (document.body.classList.contains('display-mode')) renderDisplayMode();
+      },
+      (err) => {
+        console.error('Real-time queue listener error:', err);
+        showStatus('خطأ في الاتصال: ' + err.message, 'error');
+        // Fallback to polling إذا في مشكلة
+        loadQueue();
+        refreshTimer = setInterval(loadQueue, 30000);
+      }
+    );
+}
 
 // =========================================================
 // Init
@@ -52,10 +95,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   startClock();
   await loadDoctors();
   await loadPatients();
-  await loadQueue();
-
-  // Auto-refresh every 30s
-  refreshTimer = setInterval(loadQueue, 30000);
+  
+  // 🔥 استخدم real-time listener بدل polling
+  startQueueListener();
 });
 
 // =========================================================
@@ -105,7 +147,7 @@ async function loadPatients() {
 }
 
 // =========================================================
-// Load Today's Queue
+// Load Today's Queue (for manual refresh)
 // =========================================================
 async function loadQueue() {
   try {
@@ -378,6 +420,14 @@ function renderDisplayMode() {
       </div>`;
   }).join('');
 }
+
+// =========================================================
+// Cleanup on page unload
+// =========================================================
+window.addEventListener('beforeunload', () => {
+  if (unsubscribeQueue) unsubscribeQueue();
+  if (refreshTimer) clearInterval(refreshTimer);
+});
 
 // =========================================================
 // Helpers
