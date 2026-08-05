@@ -18,7 +18,6 @@ try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     auth = firebase.auth();
-    storage = firebase.storage();
     window.storage = storage; // Fix C4
     isFirebaseConfigured = true;
     console.log("Firebase initialized successfully with project: clinc-mangment-system");
