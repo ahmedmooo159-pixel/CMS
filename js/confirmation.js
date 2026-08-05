@@ -89,3 +89,40 @@ function renderConfirmation() {
   // Clear session after reading
   sessionStorage.removeItem('booking_confirmation');
 }
+function renderConfirmation() {
+  // Try sessionStorage first, then URL params as fallback
+  const raw = sessionStorage.getItem('booking_confirmation');
+  if (!raw) {
+    // Fallback: show generic success if no data
+    document.getElementById('booking-ref').textContent = 'REF-' + Date.now().toString(36).toUpperCase();
+    document.getElementById('conf-subtitle').textContent = 'تم تأكيد حجزك. سيتم التواصل معك قريباً.';
+    return;
+  }
+
+  const data = JSON.parse(raw);
+
+  // Reference
+  document.getElementById('booking-ref').textContent = data.ref || '---';
+
+  // ... الـ code القديم كله هنا ...
+
+  // 🔥 اضف هذا الجزء الجديد:
+  // Generate Tracking Link
+  if (data.ref) {
+    const trackingUrl = `${window.BASE_PATH}/queue-radar.html?ref=${encodeURIComponent(data.ref)}`;
+    const trackingLink = document.getElementById('tracking-link');
+    if (trackingLink) {
+      trackingLink.href = trackingUrl;
+      trackingLink.textContent = 'تتبع دورك الآن';
+    }
+  }
+
+  // Pre-fill cancel link with booking ref
+  const cancelLink = document.getElementById('cancel-booking-link');
+  if (cancelLink && data.ref) {
+    cancelLink.href = `cancel-booking.html?ref=${encodeURIComponent(data.ref)}`;
+  }
+
+  // Clear session after reading
+  sessionStorage.removeItem('booking_confirmation');
+}
