@@ -12,6 +12,7 @@ let allSpecialties  = [];
 let filtered        = [];
 let lastVisibleAppt = null;
 let isLoadingMore   = false;
+let unsubscribeAppts = null;  // 🔥 real-time listener
 
 // ---- DOM ----
 const tbody      = document.getElementById('appt-tbody');
@@ -39,7 +40,7 @@ const PAY_LABELS = {
 // =========================================================
 // Init
 // =========================================================
-  document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('logout-btn').addEventListener('click', async e => {
     e.preventDefault();
     try { window.adminSignOut(); } catch(err) {}
@@ -60,7 +61,7 @@ const PAY_LABELS = {
   filterDate.addEventListener('change',    applyFilters);
 
   await Promise.all([loadDoctors(), loadSpecialties(), loadPatients()]);
-  await loadAppointments();
+  await startAppointmentsListener();
 
   // Run cleanup silently in background (max once per day)
   autoCleanupExpiredAppointments(false);
@@ -107,31 +108,53 @@ async function loadPatients() {
 }
 
 // =========================================================
-// Load Appointments
+// 🔥 Real-time Appointments Listener
 // =========================================================
-async function loadAppointments() {
+async function startAppointmentsListener() {
   tbody.innerHTML = `<tr class="empty-row"><td colspan="10"><i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;color:var(--primary-color);"></i><p style="margin-top:.75rem;">جاري التحميل...</p></td></tr>`;
 
   try {
     if (window.isFirebaseConfigured) {
-      const snap = await db.collection('appointments').orderBy('createdAt', 'desc').limit(50).get();
-      allAppointments = [];
-      lastVisibleAppt = snap.docs[snap.docs.length - 1] || null;
-      snap.forEach(d => allAppointments.push({ id: d.id, ...d.data() }));
-    } else {
-      const raw = JSON.parse(localStorage.getItem('mock_appointments') || '[]');
-      // Sort by createdAt desc and paginate mock locally for test
-      allAppointments = raw.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 50);
-      lastVisibleAppt = allAppointments.length === 50 ? true : null; 
-    }
+      // Real-time listener for all appointments, sorted by createdAt desc
+      unsubscribeAppts = db.collection('appointments')
+        .orderBy('createdAt', 'desc')
+        .limit(50)
+        .onSnapshot(
+          (snapshot) => {
+            allAppointments = [];
+            lastVisibleAppt = snapshot.docs[snapshot.docs.length - 1] || null;
+            snapshot.forEach(d => allAppointments.push({ id: d.id, ...d.data() }));
 
-    updateStats();
-    applyFilters();
-    toggleLoadMoreBtn();
+            updateStats();
+            applyFilters();
+            toggleLoadMoreBtn();
+          },
+          (err) => {
+            console.error('Real-time appointments listener error:', err);
+            tbody.innerHTML = `<tr class="empty-row"><td colspan="10" style="color:var(--danger);">خطأ في الاتصال: ${err.message}</td></tr>`;
+          }
+        );
+    } else {
+      // Mock mode: load once
+      await loadAppointmentsMock();
+    }
   } catch (err) {
-    console.error('loadAppointments error:', err);
+    console.error('startAppointmentsListener error:', err);
     tbody.innerHTML = `<tr class="empty-row"><td colspan="10" style="color:var(--danger);">خطأ في التحميل: ${err.message}</td></tr>`;
   }
+}
+
+// =========================================================
+// Mock Mode: Load Appointments Once
+// =========================================================
+async function loadAppointmentsMock() {
+  const raw = JSON.parse(localStorage.getItem('mock_appointments') || '[]');
+  allAppointments = raw.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 50);
+  lastVisibleAppt = allAppointments.length === 50 ? true : null;
+
+  updateStats();
+  applyFilters();
+  toggleLoadMoreBtn();
 }
 
 // =========================================================
@@ -194,17 +217,12 @@ async function autoCleanupExpiredAppointments(forceRun = false) {
   const lastRun     = localStorage.getItem(storageKey);
 
   // Skip if already ran today (unless forced)
-  // NOTE: We use a timestamp-based key so we re-run if time advances past midnight
   if (!forceRun && lastRun === todayStr) return;
 
   try {
     let expiredAppts = [];
 
     if (window.isFirebaseConfigured) {
-      // Query by status only (single-field — no composite index required).
-      // Then filter appointmentDate <= today in JS.
-      // This avoids the "index required" Firestore error while the composite
-      // index in firestore.indexes.json is still being built / deployed.
       const [pendingSnap, confirmedSnap] = await Promise.all([
         db.collection('appointments').where('status', '==', 'pending').get(),
         db.collection('appointments').where('status', '==', 'confirmed').get()
@@ -563,6 +581,13 @@ function exportCSV() {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// =========================================================
+// Cleanup on page unload
+// =========================================================
+window.addEventListener('beforeunload', () => {
+  if (unsubscribeAppts) unsubscribeAppts();
+});
 
 // =========================================================
 // Helpers

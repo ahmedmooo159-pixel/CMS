@@ -16,6 +16,7 @@ let selectedDate  = null;     // "YYYY-MM-DD"
 let selectedSlot  = null;     // slot object
 let currentWeekIndex = 0;
 let availableDates = [];
+let unsubscribeSlots = null;  // 🔥 real-time listener
 
 // =========================================================
 // Init
@@ -27,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('back-btn').href = `doctors-list.html?specialtyId=${encodeURIComponent(specialtyId)}&specialtyName=${encodeURIComponent(specialtyName)}`;
 
   await loadDoctor();   // must load first so fallback slot gen can use doctor object
-  await loadSlots();
+  await startSlotsListener();
   renderAvailableDays();
 
   // Proceed button
@@ -43,6 +44,98 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.location.href = url;
   });
 });
+
+// =========================================================
+// 🔥 Real-time Slots Listener (بدل loadSlots القديمة)
+// =========================================================
+async function startSlotsListener() {
+  const today = new Date().toISOString().split('T')[0];
+
+  if (!window.isFirebaseConfigured) {
+    // Mock mode: load once
+    await loadSlotsMock();
+    return;
+  }
+
+  // Real Firebase: real-time listener
+  unsubscribeSlots = db.collection('availableSlots')
+    .where('doctorId', '==', doctorId)
+    .where('isBooked', '==', false)
+    .onSnapshot(
+      (snapshot) => {
+        allSlots = [];
+        snapshot.forEach(d => allSlots.push({ id: d.id, ...d.data() }));
+
+        // Filter past slots
+        allSlots = allSlots.filter(s => s.date >= today);
+
+        // Fallback: generate on-the-fly if no saved slots
+        if (allSlots.length === 0 && doctor) {
+          allSlots = generateSlotsOnTheFly(doctor, 30);
+        }
+
+        // Group by date
+        slotsByDate = {};
+        allSlots.forEach(slot => {
+          if (!slotsByDate[slot.date]) slotsByDate[slot.date] = [];
+          slotsByDate[slot.date].push(slot);
+        });
+
+        // Sort slots in each date by startTime
+        Object.keys(slotsByDate).forEach(date => {
+          slotsByDate[date].sort((a, b) => a.startTime.localeCompare(b.startTime));
+        });
+
+        availableDates = Object.keys(slotsByDate).sort();
+
+        // Re-render UI
+        renderAvailableDays();
+        if (selectedDate) {
+          renderSlots(selectedDate);
+        }
+      },
+      (err) => {
+        console.error('Real-time slots listener error:', err);
+        // Fallback to one-time load
+        loadSlotsMock();
+      }
+    );
+}
+
+// =========================================================
+// Mock Mode: Load Slots Once
+// =========================================================
+async function loadSlotsMock() {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    const raw = JSON.parse(localStorage.getItem('mock_slots') || '[]');
+    allSlots  = raw.filter(s => s.doctorId === doctorId && !s.isBooked);
+
+    // Filter past slots
+    allSlots = allSlots.filter(s => s.date >= today);
+
+    // Fallback: generate on-the-fly if no saved slots
+    if (allSlots.length === 0 && doctor) {
+      allSlots = generateSlotsOnTheFly(doctor, 30);
+    }
+
+    // Group by date
+    slotsByDate = {};
+    allSlots.forEach(slot => {
+      if (!slotsByDate[slot.date]) slotsByDate[slot.date] = [];
+      slotsByDate[slot.date].push(slot);
+    });
+
+    // Sort slots in each date by startTime
+    Object.keys(slotsByDate).forEach(date => {
+      slotsByDate[date].sort((a, b) => a.startTime.localeCompare(b.startTime));
+    });
+
+  } catch (err) {
+    console.error('loadSlotsMock error:', err);
+  }
+}
 
 // =========================================================
 // Load Doctor Info
@@ -80,50 +173,6 @@ async function loadDoctor() {
     }
   } catch (err) {
     console.error('loadDoctor error:', err);
-  }
-}
-
-// =========================================================
-// Load Available Slots
-// =========================================================
-async function loadSlots() {
-  try {
-    const today = new Date().toISOString().split('T')[0];
-
-    if (window.isFirebaseConfigured) {
-      const snap = await db.collection('availableSlots')
-        .where('doctorId', '==', doctorId)
-        .where('isBooked', '==', false)
-        .get();
-      allSlots = [];
-      snap.forEach(d => allSlots.push({ id: d.id, ...d.data() }));
-    } else {
-      const raw = JSON.parse(localStorage.getItem('mock_slots') || '[]');
-      allSlots  = raw.filter(s => s.doctorId === doctorId && !s.isBooked);
-    }
-
-    // Filter past slots
-    allSlots = allSlots.filter(s => s.date >= today);
-
-    // --- Fallback: generate on-the-fly from doctor schedule if no saved slots ---
-    if (allSlots.length === 0 && doctor) {
-      allSlots = generateSlotsOnTheFly(doctor, 30);
-    }
-
-    // Group by date
-    slotsByDate = {};
-    allSlots.forEach(slot => {
-      if (!slotsByDate[slot.date]) slotsByDate[slot.date] = [];
-      slotsByDate[slot.date].push(slot);
-    });
-
-    // Sort slots in each date by startTime
-    Object.keys(slotsByDate).forEach(date => {
-      slotsByDate[date].sort((a, b) => a.startTime.localeCompare(b.startTime));
-    });
-
-  } catch (err) {
-    console.error('loadSlots error:', err);
   }
 }
 
@@ -320,3 +369,10 @@ function onSlotClick(el, slotId) {
   document.getElementById('sum-time').textContent = `${selectedSlot.startTime} – ${selectedSlot.endTime}`;
   document.getElementById('proceed-btn').disabled = false;
 }
+
+// =========================================================
+// Cleanup on page unload
+// =========================================================
+window.addEventListener('beforeunload', () => {
+  if (unsubscribeSlots) unsubscribeSlots();
+});
