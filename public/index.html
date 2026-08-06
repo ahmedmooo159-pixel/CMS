@@ -219,13 +219,26 @@
       <div class="step-pill"><i class="fa-solid fa-4"></i> أكد الحجز</div>
     </div>
 
-    <!-- Cancel booking quick link -->
-    <p class="fade-in delay-2" style="font-size:.85rem;color:var(--text-muted);margin-bottom:2rem;">
+    <p class="fade-in delay-2" style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem;">
       عندك حجز سابق؟
       <a href="cancel-booking.html" style="color:var(--danger);font-weight:600;text-decoration:none;margin-right:.25rem;">
         <i class="fa-solid fa-ban" style="margin-left:.2rem;"></i>إلغاء الحجز
       </a>
     </p>
+
+    <!-- Online Session Banner (shown if user has pending/confirmed online appointment) -->
+    <div id="online-session-banner" style="display:none;max-width:520px;margin:0 auto 1.5rem;">
+      <div id="online-session-card" style="border-radius:16px;padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1rem;">
+        <div style="font-size:1.6rem;flex-shrink:0;" id="online-session-icon">📋</div>
+        <div style="flex:1;text-align:right;">
+          <div id="online-session-title" style="font-weight:700;font-size:.95rem;margin-bottom:.2rem;"></div>
+          <div id="online-session-desc" style="font-size:.82rem;opacity:.8;"></div>
+        </div>
+        <a id="online-session-btn" href="#" target="_blank" style="display:none;white-space:nowrap;padding:.55rem 1rem;border-radius:10px;font-weight:700;font-size:.85rem;text-decoration:none;background:white;color:#059669;">
+          <i class="fa-solid fa-video"></i> دخول الجلسة
+        </a>
+      </div>
+    </div>
 
     <!-- Quick stats -->
     <div class="stats-bar fade-in delay-2">
@@ -303,6 +316,78 @@
   <script src="../js/theme.js"></script>
   <script src="../js/portal.js"></script>
   <script src="../js/contact.js"></script>
+
+  <script>
+    // ---- Online Session Banner Logic ----
+    function checkOnlineSession() {
+      const banner = document.getElementById('online-session-banner');
+      const card   = document.getElementById('online-session-card');
+      const icon   = document.getElementById('online-session-icon');
+      const title  = document.getElementById('online-session-title');
+      const desc   = document.getElementById('online-session-desc');
+      const btn    = document.getElementById('online-session-btn');
+
+      // Look for any online appointment in mock storage or sessionStorage
+      let onlineAppt = null;
+      try {
+        const appts = JSON.parse(localStorage.getItem('mock_appointments') || '[]');
+        onlineAppt = appts.find(a =>
+          a.consultationType === 'online' &&
+          a.status !== 'cancelled' &&
+          a.status !== 'completed'
+        );
+      } catch (_) {}
+
+      // Also check sessionStorage for freshly-booked appointment
+      if (!onlineAppt) {
+        try {
+          const raw = sessionStorage.getItem('last_online_booking');
+          if (raw) onlineAppt = JSON.parse(raw);
+        } catch (_) {}
+      }
+
+      if (!onlineAppt) return;
+
+      banner.style.display = 'block';
+
+      const isPaid = onlineAppt.paymentStatus === 'paid';
+      const isPending = onlineAppt.paymentStatus === 'pending_approval';
+
+      if (isPaid) {
+        // Session confirmed - show green join button
+        card.style.background = 'linear-gradient(135deg, #065f46, #047857)';
+        card.style.border = '1px solid rgba(16,185,129,.3)';
+        card.style.color = '#fff';
+        icon.textContent = '🎥';
+        title.textContent = 'جلستك الأونلاين جاهزة!';
+        desc.textContent = `سيتم بدء الجلسة في الوقت المحدد — ${onlineAppt.appointmentTime || ''}`;
+        btn.style.display = 'inline-flex';
+        btn.href = `video-call.html?ref=${encodeURIComponent(onlineAppt.bookingRef)}&role=patient`;
+        btn.style.alignItems = 'center';
+        btn.style.gap = '0.35rem';
+      } else if (isPending) {
+        // Waiting for admin approval
+        card.style.background = 'linear-gradient(135deg, #1e1a2e, #1a1f3a)';
+        card.style.border = '1px solid rgba(99,102,241,.3)';
+        card.style.color = '#a5b4fc';
+        icon.textContent = '⏳';
+        title.textContent = 'لم يتم تأكيد الجلسة بعد';
+        desc.textContent = 'جاري مراجعة إيصال الدفع من قِبل الإدارة، سيتم تفعيل الجلسة بعد التأكيد.';
+        btn.style.display = 'none';
+      } else {
+        // Unpaid
+        card.style.background = 'linear-gradient(135deg, #1e1a2e, #1a1f3a)';
+        card.style.border = '1px solid rgba(245,158,11,.3)';
+        card.style.color = '#fbbf24';
+        icon.textContent = '💳';
+        title.textContent = 'بانتظار إتمام الدفع';
+        desc.textContent = 'أكمل عملية الدفع لتفعيل جلستك الأونلاين.';
+        btn.style.display = 'none';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', checkOnlineSession);
+  </script>
 
   <footer style="margin-top: 2rem; padding: 1.5rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); max-width: 1100px; margin-left: auto; margin-right: auto;">
     <div>© 2026 إدارة العيادة. جميع الحقوق محفوظة.</div>

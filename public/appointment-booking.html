@@ -357,10 +357,18 @@
                 const price = selectedOption.dataset.price;
                 const serviceName = selectedOption.value;
                 
-                if (price) {
+                if (serviceName && price) {
                   document.getElementById('sum-price').textContent = `${price} ج.م`;
                   sessionStorage.setItem('booking_servicePrice', price);
                   sessionStorage.setItem('booking_serviceName', serviceName);
+                } else {
+                  document.getElementById('sum-price').textContent = '-- لم يُحدَّد --';
+                  sessionStorage.removeItem('booking_servicePrice');
+                  sessionStorage.removeItem('booking_serviceName');
+                }
+
+                if (typeof window.validateBookingCompletion === 'function') {
+                  window.validateBookingCompletion();
                 }
               }
             </script>

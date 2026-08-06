@@ -87,6 +87,8 @@ function renderConfirmation() {
     const payEl = document.getElementById('conf-payment-status');
     if (data.paymentStatus === 'paid') {
       payEl.innerHTML = `<span class="payment-badge paid"><i class="fa-solid fa-circle-check"></i> مدفوع إلكترونياً</span>`;
+    } else if (data.paymentStatus === 'pending_approval') {
+      payEl.innerHTML = `<span class="payment-badge unpaid"><i class="fa-solid fa-hourglass-half"></i> بانتظار مراجعة الإيصال</span>`;
     } else {
       const method = data.paymentMethod === 'cash' ? 'الدفع عند الحضور' : 'في انتظار الدفع';
       payEl.innerHTML = `<span class="payment-badge unpaid"><i class="fa-solid fa-clock"></i> ${method}</span>`;
@@ -96,6 +98,10 @@ function renderConfirmation() {
     const queueMsg = data.queueNumber ? ` وأنت رقم ${data.queueNumber} في الدور.` : '';
     if (data.paymentStatus === 'paid') {
       document.getElementById('conf-subtitle').textContent = `تم الدفع وتأكيد الحجز بنجاح${queueMsg} نراك قريباً!`;
+    } else if (data.paymentStatus === 'pending_approval') {
+      document.getElementById('conf-subtitle').textContent = data.consultationType === 'online'
+        ? 'تم استلام طلب حجزك. جاري مراجعة إيصال الدفع — سيتم تفعيل جلستك بعد التأكيد.'
+        : 'تم استلام طلب حجزك وجاري مراجعة إيصال الدفع. سنتواصل معك بعد التأكيد.';
     } else {
       document.getElementById('conf-subtitle').textContent = `تم تسجيل حجزك${queueMsg} يرجى الحضور في الموعد المحدد وإحضار هذا الرقم المرجعي.`;
     }
@@ -107,8 +113,15 @@ function renderConfirmation() {
         if (data.consultationType === 'online') {
           trackingLink.href = `video-call.html?ref=${encodeURIComponent(data.ref)}&role=patient`;
           trackingLink.target = '_blank';
-          trackingLink.innerHTML = '<i class="fa-solid fa-video"></i> دخول الجلسة الأونلاين (مكالمة الفيديو) 🎥';
+          trackingLink.innerHTML = '<i class="fa-solid fa-video"></i> دخول الجلسة الأونلاين 🎥';
           trackingLink.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+
+          // For pending approval, disable the button
+          if (data.paymentStatus === 'pending_approval') {
+            trackingLink.style.pointerEvents = 'none';
+            trackingLink.style.opacity = '0.5';
+            trackingLink.innerHTML = '<i class="fa-solid fa-hourglass-half"></i> بانتظار تأكيد الدفع...';
+          }
         } else {
           trackingLink.href = `queue-radar.html?ref=${encodeURIComponent(data.ref)}`;
           trackingLink.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> تتبع دورك الآن 📍';

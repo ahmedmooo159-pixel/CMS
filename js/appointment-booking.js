@@ -198,15 +198,15 @@ async function loadDoctor() {
       const serviceSelect = document.getElementById('doctor-service-select');
       
       servicesContainer.style.display = 'flex';
-      serviceSelect.innerHTML = doctor.services.map((s, index) => 
-        `<option value="${s.name}" data-price="${s.price}" ${index === 0 ? 'selected' : ''}>${s.name} - ${s.price} ج.م</option>`
+      serviceSelect.innerHTML = `<option value="" disabled selected>-- اختر نوع الكشف --</option>` + doctor.services.map(s => 
+        `<option value="${s.name}" data-price="${s.price}">${s.name} - ${s.price} ج.م</option>`
       ).join('');
       
-      if (typeof updateServicePrice === 'function') {
-        updateServicePrice();
-      }
+      sessionStorage.removeItem('booking_servicePrice');
+      sessionStorage.removeItem('booking_serviceName');
+      document.getElementById('sum-price').textContent = '-- لم يُحدَّد --';
     } else if (specialty?.basePrice) {
-      document.getElementById('sum-price').textContent = `${specialty.basePrice} ج.م`;
+      document.getElementById('sum-price').textContent = `${specialty.basePrice} ج.m`;
       sessionStorage.setItem('booking_servicePrice', specialty.basePrice);
       sessionStorage.setItem('booking_serviceName', 'كشف عادي');
     }
@@ -398,9 +398,9 @@ function onDaySelectChange(date) {
     document.getElementById('selected-date-label').textContent = '';
     document.getElementById('sum-date').textContent = '-- لم يُحدَّد --';
     document.getElementById('sum-time').textContent = '-- لم يُحدَّد --';
-    document.getElementById('proceed-btn').disabled = true;
     document.getElementById('slots-grid').innerHTML = '<div class="empty-slots">اختر يوماً من التقويم لعرض المواعيد المتاحة</div>';
     renderAvailableDays();
+    validateBookingCompletion();
     return;
   }
 
@@ -410,7 +410,7 @@ function onDaySelectChange(date) {
   document.getElementById('selected-date-label').textContent = `– ${label}`;
   document.getElementById('sum-date').textContent = label;
   document.getElementById('sum-time').textContent = '-- لم يُحدَّد --';
-  document.getElementById('proceed-btn').disabled = true;
+  validateBookingCompletion();
 
   renderAvailableDays();
   renderSlots(date);
@@ -447,8 +447,28 @@ function onSlotClick(el, slotId) {
   if (!selectedSlot) return;
 
   document.getElementById('sum-time').textContent = `${selectedSlot.startTime} – ${selectedSlot.endTime}`;
-  document.getElementById('proceed-btn').disabled = false;
+  validateBookingCompletion();
 }
+
+// =========================================================
+// Booking Form Validation
+// =========================================================
+function validateBookingCompletion() {
+  const proceedBtn = document.getElementById('proceed-btn');
+  if (!proceedBtn) return;
+  
+  const hasSlot = !!selectedSlot;
+  
+  let hasService = true;
+  if (doctor && doctor.services && doctor.services.length > 0) {
+    const serviceSelect = document.getElementById('doctor-service-select');
+    hasService = serviceSelect && serviceSelect.value !== "";
+  }
+  
+  proceedBtn.disabled = !(hasSlot && hasService);
+}
+
+window.validateBookingCompletion = validateBookingCompletion;
 
 // =========================================================
 // Cleanup on page unload

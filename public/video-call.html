@@ -5,142 +5,112 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>جلسة الاستشارة الطبية - العيادة</title>
   <link rel="stylesheet" href="../css/style.css">
-  <link rel="stylesheet" href="../css/layout.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Jitsi Meet API -->
-  <script src="https://meet.jit.si/external_api.js"></script>
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      margin: 0;
-      background-color: #0b0f19;
-      color: var(--text-primary);
+      background: #0b0f19;
+      color: #f1f5f9;
       display: flex;
       flex-direction: column;
       height: 100vh;
       overflow: hidden;
+      font-family: var(--font-body, 'Inter', sans-serif);
     }
     .video-header {
       background: #111827;
-      padding: 0.8rem 1.5rem;
-      border-bottom: 1px solid var(--border-color);
+      padding: 0.7rem 1.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-shrink: 0;
       z-index: 10;
     }
     .video-title {
-      font-family: var(--font-display);
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 700;
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
-    .video-info {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-    }
-    #meet-container {
-      flex: 1;
-      background: #1e293b;
-      position: relative;
-    }
-    .loading-overlay {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: #0b0f19;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-      z-index: 5;
-      transition: opacity 0.5s ease;
-    }
-    .loading-spinner {
-      font-size: 2.5rem;
-      color: var(--primary-color);
+    .rec-dot {
+      width: 10px; height: 10px;
+      background: #ef4444;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
     }
     @keyframes pulse {
-      0% { opacity: 0.3; }
+      0%,100% { opacity: 0.3; }
       50% { opacity: 1; }
-      100% { opacity: 0.3; }
     }
+    .video-info { font-size: 0.82rem; color: #94a3b8; }
+    #jitsi-iframe {
+      flex: 1;
+      width: 100%;
+      border: none;
+      display: block;
+    }
+    .leave-btn {
+      background: rgba(239,68,68,0.1);
+      color: #ef4444;
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 8px;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.82rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .leave-btn:hover { background: rgba(239,68,68,0.2); }
   </style>
 </head>
-<body class="dark-theme">
+<body>
   <header class="video-header">
     <div class="video-title">
-      <i class="fa-solid fa-circle-dot" style="color: #ef4444; animation: pulse 1.5s infinite;"></i>
+      <div class="rec-dot"></div>
       <span>غرفة الاستشارة الطبية الافتراضية</span>
     </div>
     <div class="video-info">
-      <span>رقم الحجز المرجعي: </span>
-      <strong id="ref-label" style="font-family: monospace; color: var(--secondary-color);">...</strong>
+      رقم الجلسة: <strong id="ref-label" style="font-family:monospace; color:#38bdf8;">...</strong>
     </div>
-    <div>
-      <button onclick="window.close()" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-        <i class="fa-solid fa-arrow-right-from-bracket"></i> مغادرة
-      </button>
-    </div>
+    <button class="leave-btn" onclick="window.close()">
+      <i class="fa-solid fa-arrow-right-from-bracket"></i> مغادرة
+    </button>
   </header>
 
-  <div id="meet-container">
-    <div class="loading-overlay" id="loading-overlay">
-      <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
-      <div style="font-weight: 600;">جاري إعداد اتصال الفيديو الآمن...</div>
-    </div>
-  </div>
+  <iframe
+    id="jitsi-iframe"
+    allow="camera; microphone; display-capture; fullscreen; clipboard-read; clipboard-write"
+    allowfullscreen
+    src="">
+  </iframe>
 
   <script>
     const params = new URLSearchParams(window.location.search);
-    const ref = params.get('ref') || 'demo';
+    const ref  = params.get('ref')  || 'demo';
     const role = params.get('role') || 'patient';
-    
+
     document.getElementById('ref-label').textContent = ref;
 
-    // Initialize Jitsi Meet IFrame API
-    const domain = 'meet.jit.si';
-    const options = {
-      roomName: 'ClinicRoom-' + ref,
-      width: '100%',
-      height: '100%',
-      parentNode: document.querySelector('#meet-container'),
-      lang: 'ar',
-      configOverwrite: {
-        startWithAudioMuted: false,
-        startWithVideoMuted: false,
-        prejoinPageEnabled: true, // Let them configure camera before entering
-        enableWelcomePage: false
-      },
-      interfaceConfigOverwrite: {
-        TOOLBAR_BUTTONS: [
-          'microphone', 'camera', 'closedcaptions', 'desktop', 'embedmeeting', 'fullscreen',
-          'fodeviceselection', 'hangup', 'profile', 'chat', 'recording',
-          'livestreaming', 'etherpad', 'sharedvideo', 'settings', 'raisehand',
-          'videoquality', 'filmstrip', 'invite', 'feedback', 'stats', 'shortcuts',
-          'tileview', 'videobackgroundblur', 'download', 'help', 'mute-everyone',
-          'security'
-        ]
-      },
-      userInfo: {
-        displayName: role === 'doctor' ? 'د. الطبيب المعالج' : 'المريض'
-      }
-    };
+    // Build safe room name from ref
+    const roomName = 'ClinicConsult-' + ref.replace(/[^a-zA-Z0-9]/g, '');
+    const displayName = role === 'doctor' ? 'الطبيب المعالج' : 'المريض';
 
-    const api = new JitsiMeetExternalAPI(domain, options);
+    // Use direct Jitsi URL embed (no external_api.js needed - avoids chrome extension errors)
+    const jitsiUrl = `https://meet.jit.si/${encodeURIComponent(roomName)}#` +
+      `userInfo.displayName=${encodeURIComponent(displayName)}` +
+      `&config.startWithAudioMuted=false` +
+      `&config.startWithVideoMuted=false` +
+      `&config.enableWelcomePage=false` +
+      `&config.prejoinPageEnabled=true` +
+      `&interfaceConfig.SHOW_JITSI_WATERMARK=false` +
+      `&interfaceConfig.SHOW_BRAND_WATERMARK=false`;
 
-    // Hide loader once the conference joins
-    api.addEventListener('videoConferenceJoined', () => {
-      document.getElementById('loading-overlay').style.opacity = 0;
-      setTimeout(() => {
-        document.getElementById('loading-overlay').style.display = 'none';
-      }, 500);
-    });
-
-    api.addEventListener('readyToClose', () => {
-      window.close();
-    });
+    document.getElementById('jitsi-iframe').src = jitsiUrl;
   </script>
 </body>
 </html>

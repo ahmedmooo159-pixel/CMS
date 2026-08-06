@@ -412,11 +412,19 @@ async function saveAppointment(patient, notes, paymentMethod, paymentStatus, pay
   const confData = {
     ref, patient, doctor, specialty,
     date: slotDate, startTime: slotStart, endTime: slotEnd,
-    paymentMethod, paymentStatus, price: specialty?.basePrice || 0,
+    paymentMethod, paymentStatus, price: parseFloat(sessionStorage.getItem('booking_servicePrice')) || specialty?.basePrice || 0,
     appointmentId: appointment.id,
-    queueNumber
+    queueNumber,
+    consultationType: appointment.consultationType,
+    bookingRef: ref
   };
   sessionStorage.setItem('booking_confirmation', JSON.stringify(confData));
+
+  // If online booking, also persist to localStorage so homepage banner can detect it
+  if (appointment.consultationType === 'online') {
+    sessionStorage.setItem('last_online_booking', JSON.stringify(appointment));
+    // Also refresh mock_appointments entry with latest paymentStatus for banner
+  }
 
   // Trigger local WhatsApp Gateway if running
   try {
@@ -437,7 +445,7 @@ async function saveAppointment(patient, notes, paymentMethod, paymentStatus, pay
     }).catch(() => {/* Gateway off — ignore */});
   } catch (_) {}
 
-  // 5. Redirect to confirmation
+  // 5. Redirect
   window.location.href = 'confirmation.html';
 }
 
