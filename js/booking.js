@@ -133,25 +133,69 @@ function selectPayment(method) {
 }
 
 // =========================================================
-// Receipt Upload Helpers
+// Receipt Upload Helpers with Compression
 // =========================================================
-function handleReceiptUpload(event) {
+function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width *= maxHeight / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Export as compressed JPEG
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+}
+
+async function handleReceiptUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  if (file.size > 5 * 1024 * 1024) {
-    alert('حجم الصورة كبير جداً. يرجى اختيار صورة أصغر من 5MB.');
-    return;
-  }
+  const uploadLabel = document.getElementById('receipt-upload-label');
+  const originalLabelHtml = uploadLabel.innerHTML;
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    receiptDataUrl = e.target.result;
+  try {
+    uploadLabel.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size:1.8rem;color:var(--primary-color);margin-bottom:.5rem;"></i><span>جاري ضغط ومعالجة الصورة...</span>';
+    
+    // Compress the image client-side to ensure it is always < 100KB for Firestore safe storage
+    const compressedDataUrl = await compressImage(file, 800, 800, 0.7);
+    
+    receiptDataUrl = compressedDataUrl;
     document.getElementById('receipt-img-preview').src = receiptDataUrl;
     document.getElementById('receipt-preview').style.display = 'block';
-    document.getElementById('receipt-upload-label').style.display = 'none';
-  };
-  reader.readAsDataURL(file);
+    uploadLabel.style.display = 'none';
+  } catch (err) {
+    console.error('Image compression failed:', err);
+    alert('فشلت معالجة الصورة. يرجى محاولة رفع صورة أخرى.');
+    uploadLabel.innerHTML = originalLabelHtml;
+  }
 }
 
 function clearReceipt() {
