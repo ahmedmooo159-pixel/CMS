@@ -102,11 +102,11 @@ function renderConfirmation() {
 
     // ========== Tracking Link ==========
     if (data.ref) {
-      const trackingUrl = `${window.location.origin}${window.BASE_PATH || ''}/public/queue-radar.html?ref=${encodeURIComponent(data.ref)}`;
-      const trackingLink = document.getElementById('tracking-link');
+      const trackingUrl = `queue-radar.html?ref=${encodeURIComponent(data.ref)}`;
+      const trackingLink = document.getElementById('queue-radar-btn');
       if (trackingLink) {
         trackingLink.href = trackingUrl;
-        trackingLink.textContent = 'تتبع دورك الآن 📍';
+        trackingLink.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> تتبع دورك الآن 📍';
       }
       
       // Also set WhatsApp share link
@@ -136,7 +136,7 @@ function renderConfirmation() {
 
 // ========== Fallback: Show generic tracking if no data ==========
 function showGenericTracking() {
-  const trackingLink = document.getElementById('tracking-link');
+  const trackingLink = document.getElementById('queue-radar-btn');
   if (trackingLink) {
     trackingLink.style.display = 'none';
   }
