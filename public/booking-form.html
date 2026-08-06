@@ -210,7 +210,33 @@
           </h3>
 
           <div class="payment-methods">
-            <!-- Online Payment -->
+            <!-- Vodafone Cash -->
+            <label class="payment-method-option selected" id="pm-vodafone" onclick="selectPayment('vodafone')">
+              <input type="radio" name="paymentMethod" value="vodafone" checked>
+              <div class="payment-method-icon" style="background:rgba(220,38,38,.12);color:#dc2626;">
+                <i class="fa-solid fa-mobile-screen-button"></i>
+              </div>
+              <div class="payment-method-details">
+                <div class="pm-name">فودافون كاش</div>
+                <div class="pm-desc">حوّل وارفع صورة إيصال التحويل</div>
+              </div>
+              <div class="payment-check"><i class="fa-solid fa-check"></i></div>
+            </label>
+
+            <!-- InstaPay -->
+            <label class="payment-method-option" id="pm-instapay" onclick="selectPayment('instapay')">
+              <input type="radio" name="paymentMethod" value="instapay">
+              <div class="payment-method-icon" style="background:rgba(79,70,229,.12);color:var(--primary-color);">
+                <i class="fa-solid fa-bolt"></i>
+              </div>
+              <div class="payment-method-details">
+                <div class="pm-name">InstaPay</div>
+                <div class="pm-desc">حوّل عبر تطبيق InstaPay وارفع إيصال التحويل</div>
+              </div>
+              <div class="payment-check"><i class="fa-solid fa-check"></i></div>
+            </label>
+
+            <!-- Online Payment (Paymob) -->
             <label class="payment-method-option" id="pm-online" onclick="selectPayment('online')">
               <input type="radio" name="paymentMethod" value="online">
               <div class="payment-method-icon" style="background:rgba(6,182,212,.12);color:var(--secondary-color);">
@@ -224,8 +250,8 @@
             </label>
 
             <!-- Cash -->
-            <label class="payment-method-option selected" id="pm-cash" onclick="selectPayment('cash')">
-              <input type="radio" name="paymentMethod" value="cash" checked>
+            <label class="payment-method-option" id="pm-cash" onclick="selectPayment('cash')">
+              <input type="radio" name="paymentMethod" value="cash">
               <div class="payment-method-icon" style="background:rgba(16,185,129,.12);color:var(--success);">
                 <i class="fa-solid fa-money-bill-wave"></i>
               </div>
@@ -235,6 +261,46 @@
               </div>
               <div class="payment-check"><i class="fa-solid fa-check"></i></div>
             </label>
+          </div>
+
+          <!-- Transfer Instructions Box (Vodafone / InstaPay) -->
+          <div id="transfer-instructions-box" style="background:rgba(220,38,38,.06);border:1.5px solid rgba(220,38,38,.2);border-radius:12px;padding:1rem 1.25rem;margin-top:.5rem;">
+            <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.75rem;">
+              <div style="width:36px;height:36px;background:rgba(220,38,38,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:#dc2626;flex-shrink:0;">
+                <i id="transfer-icon" class="fa-solid fa-mobile-screen-button"></i>
+              </div>
+              <div>
+                <div id="transfer-title" style="font-weight:700;font-size:.95rem;">تحويل عبر فودافون كاش</div>
+                <div style="font-size:.8rem;color:var(--text-muted);"> حوّل المبلغ وارفع صورة الإيصال</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:.75rem;align-items:center;background:var(--bg-input);padding:.65rem 1rem;border-radius:8px;border:1px solid var(--border-color);margin-bottom:.75rem;">
+              <i id="transfer-method-icon" class="fa-solid fa-phone" style="color:#dc2626;"></i>
+              <div>
+                <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.15rem;" id="transfer-label">رقم فودافون كاش</div>
+                <div style="font-family:monospace;font-weight:700;font-size:1.1rem;letter-spacing:.05em;color:var(--text-primary);" id="transfer-number">01XXXXXXXXXX</div>
+              </div>
+              <button type="button" onclick="copyTransferNumber()" style="margin-right:auto;background:none;border:1px solid var(--border-color);border-radius:6px;padding:.35rem .6rem;font-size:.78rem;cursor:pointer;color:var(--text-muted);">
+                <i class="fa-solid fa-copy"></i> نسخ
+              </button>
+            </div>
+            <div style="font-size:.82rem;color:var(--text-muted);margin-bottom:.75rem;">بعد التحويل، ارفع صورة إيصال التحويل (Screenshot) لتأكيد حجزك:</div>
+
+            <!-- Receipt Upload Area -->
+            <label for="receipt-upload" id="receipt-upload-label" style="display:flex;flex-direction:column;align-items:center;gap:.6rem;padding:1rem;border:2px dashed rgba(220,38,38,.3);border-radius:10px;cursor:pointer;transition:all .2s;text-align:center;background:rgba(220,38,38,.03);">
+              <i class="fa-solid fa-cloud-arrow-up" style="font-size:1.6rem;color:#dc2626;"></i>
+              <span style="font-size:.85rem;font-weight:600;color:var(--text-primary);" >اضغط لرفع صورة الإيصال</span>
+              <span style="font-size:.75rem;color:var(--text-muted);">PNG, JPG, JPEG - بحجم أقصى 5MB</span>
+            </label>
+            <input type="file" id="receipt-upload" accept="image/*" style="display:none;" onchange="handleReceiptUpload(event)">
+
+            <!-- Preview of uploaded receipt -->
+            <div id="receipt-preview" style="display:none;margin-top:.75rem;">
+              <img id="receipt-img-preview" src="" alt="إيصال التحويل" style="width:100%;max-height:220px;object-fit:contain;border-radius:8px;border:1px solid var(--border-color);">
+              <button type="button" onclick="clearReceipt()" style="display:flex;align-items:center;gap:.35rem;margin-top:.4rem;font-size:.8rem;color:var(--danger);background:none;border:none;cursor:pointer;padding:0;">
+                <i class="fa-solid fa-xmark"></i> حذف الصورة
+              </button>
+            </div>
           </div>
 
           <!-- Paymob iframe container (hidden unless online selected) -->

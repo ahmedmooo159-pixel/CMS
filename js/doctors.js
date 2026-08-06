@@ -49,6 +49,16 @@ function buildDaysGrid() {
       ${d.ar}
     </label>
   `).join('');
+
+  const onlineGrid = document.getElementById('online-days-off-grid');
+  if (onlineGrid) {
+    onlineGrid.innerHTML = DAYS_AR.map(d => `
+      <label class="day-checkbox-label">
+        <input type="checkbox" class="online-day-off-cb" value="${d.en}">
+        ${d.ar}
+      </label>
+    `).join('');
+  }
 }
 
 // =========================================================
@@ -84,8 +94,9 @@ function bindGlobalEvents() {
     reader.readAsDataURL(file);
   });
 
-  // Add qualification row
-  document.getElementById('add-qual-btn').addEventListener('click', addQualificationRow);
+  // Add rows
+  document.getElementById('add-qual-btn').addEventListener('click', () => addQualificationRow());
+  document.getElementById('add-service-btn').addEventListener('click', () => addServiceRow());
 
   // Form submit
   document.getElementById('doctorForm').addEventListener('submit', handleFormSubmit);
@@ -267,6 +278,7 @@ function openModal(id = null) {
   editingPhotoUrl = '';
   setPhotoPreview(null);
   clearQualifications();
+  clearServices();
   buildDaysGrid(); // reset checkboxes
 
   if (id) {
@@ -282,6 +294,12 @@ function openModal(id = null) {
     document.getElementById('hoursEndInput').value     = d.workingHoursEnd   || '17:00';
     document.getElementById('apptDurationInput').value = d.appointmentDuration || 30;
     document.getElementById('maxApptInput').value      = d.maxAppointmentsPerDay || 10;
+    document.getElementById('vodafoneNumberInput').value = d.vodafoneNumber || '';
+    document.getElementById('instapayIdInput').value = d.instapayId || '';
+    document.getElementById('allowOnlineInput').checked = d.allowOnline !== false;
+    document.getElementById('hasSeparateOnlineHoursInput').checked = !!d.hasSeparateOnlineHours;
+    document.getElementById('onlineHoursStartInput').value = d.onlineWorkingHoursStart || '17:00';
+    document.getElementById('onlineHoursEndInput').value = d.onlineWorkingHoursEnd || '20:00';
     document.getElementById('doctorActiveInput').checked = d.isActive !== false;
 
     // Specialty
@@ -294,16 +312,41 @@ function openModal(id = null) {
     // Qualifications
     (d.qualifications || []).forEach(q => addQualificationRow(q));
 
+    // Services
+    if (d.services && d.services.length) {
+      d.services.forEach(s => addServiceRow(s.name, s.price));
+    } else {
+      addServiceRow();
+    }
+
     // Days off
     (d.daysOff || []).forEach(day => {
       const cb = document.querySelector(`#days-off-grid input[value="${day}"]`);
       if (cb) cb.checked = true;
     });
+
+    // Online Days off
+    (d.onlineDaysOff || []).forEach(day => {
+      const cb = document.querySelector(`#online-days-off-grid input[value="${day}"]`);
+      if (cb) cb.checked = true;
+    });
+
+    if (typeof toggleOnlineMasterSection === 'function') toggleOnlineMasterSection();
+    if (typeof toggleOnlineHoursSection === 'function') toggleOnlineHoursSection();
   } else {
     document.getElementById('modal-title').textContent = 'إضافة طبيب جديد';
     document.getElementById('doctorIdInput').value = '';
+    document.getElementById('vodafoneNumberInput').value = '';
+    document.getElementById('instapayIdInput').value = '';
+    document.getElementById('allowOnlineInput').checked = true;
+    document.getElementById('hasSeparateOnlineHoursInput').checked = false;
+    document.getElementById('onlineHoursStartInput').value = '17:00';
+    document.getElementById('onlineHoursEndInput').value = '20:00';
     document.getElementById('doctorActiveInput').checked = true;
     addQualificationRow(); // start with one row
+    addServiceRow(); // start with one row
+    if (typeof toggleOnlineMasterSection === 'function') toggleOnlineMasterSection();
+    if (typeof toggleOnlineHoursSection === 'function') toggleOnlineHoursSection();
   }
 
   modal.style.display = 'flex';
@@ -336,6 +379,40 @@ function clearQualifications() {
 function getQualifications() {
   return [...document.querySelectorAll('.qual-input')]
     .map(i => i.value.trim())
+    .filter(Boolean);
+}
+
+// =========================================================
+// Service rows
+// =========================================================
+function addServiceRow(name = '', price = '') {
+  const container = document.getElementById('services-list');
+  const row = document.createElement('div');
+  row.className = 'service-item';
+  row.style.display = 'flex';
+  row.style.gap = '0.5rem';
+  row.style.marginBottom = '0.5rem';
+  row.innerHTML = `
+    <input type="text" class="form-input service-name-input" placeholder="اسم الخدمة (مثال: كشف عادي)" value="${escapeHtml(name)}" style="flex: 1;">
+    <input type="number" class="form-input service-price-input" placeholder="السعر" value="${price}" style="width: 100px;">
+    <button type="button" class="icon-btn danger remove-service-btn" title="حذف">
+      <i class="fa-solid fa-xmark"></i>
+    </button>`;
+  row.querySelector('.remove-service-btn').addEventListener('click', () => row.remove());
+  container.appendChild(row);
+}
+
+function clearServices() {
+  document.getElementById('services-list').innerHTML = '';
+}
+
+function getServices() {
+  return [...document.querySelectorAll('.service-item')]
+    .map(row => {
+      const name = row.querySelector('.service-name-input').value.trim();
+      const price = parseFloat(row.querySelector('.service-price-input').value) || 0;
+      return name ? { name, price } : null;
+    })
     .filter(Boolean);
 }
 
@@ -373,8 +450,17 @@ async function handleFormSubmit(e) {
   const maxA   = parseInt(document.getElementById('maxApptInput').value) || 10;
   const active = document.getElementById('doctorActiveInput').checked;
   const quals  = getQualifications();
+  const services = getServices();
   const daysOff= [...document.querySelectorAll('.day-off-cb:checked')].map(c => c.value);
   const file   = document.getElementById('doctorPhotoInput').files[0];
+  const vodafoneNumber = document.getElementById('vodafoneNumberInput').value.trim();
+  const instapayId = document.getElementById('instapayIdInput').value.trim();
+
+  const allowOnline = document.getElementById('allowOnlineInput').checked;
+  const hasSeparateOnlineHours = document.getElementById('hasSeparateOnlineHoursInput').checked;
+  const onlineHsStart = document.getElementById('onlineHoursStartInput').value;
+  const onlineHsEnd = document.getElementById('onlineHoursEndInput').value;
+  const onlineDaysOff = [...document.querySelectorAll('.online-day-off-cb:checked')].map(c => c.value);
 
   if (!name)   { showStatus('يرجى إدخال اسم الطبيب.', 'error'); return; }
   if (!specId) { showStatus('يرجى اختيار التخصص.', 'error'); return; }
@@ -398,7 +484,11 @@ async function handleFormSubmit(e) {
       name, specialtyId: specId, phone, email, bio,
       workingHoursStart: hsStart, workingHoursEnd: hsEnd,
       appointmentDuration: dur, maxAppointmentsPerDay: maxA,
-      qualifications: quals, daysOff,
+      qualifications: quals, services, daysOff,
+      vodafoneNumber, instapayId,
+      allowOnline, hasSeparateOnlineHours,
+      onlineWorkingHoursStart: onlineHsStart, onlineWorkingHoursEnd: onlineHsEnd,
+      onlineDaysOff,
       isActive: active, photo: photoUrl || '',
       updatedAt: new Date().toISOString()
     };
@@ -536,38 +626,81 @@ async function generateSlotsForDoctor(doctor, daysAhead = 30) {
   const endTime     = doctor.workingHoursEnd      || '17:00';
   const daysOff     = doctor.daysOff || [];
 
+  const allowOnline = doctor.allowOnline !== false;
+  const hasSeparate = !!doctor.hasSeparateOnlineHours;
+  const onlineDaysOff = doctor.onlineDaysOff || [];
+  const onlineStart = doctor.onlineWorkingHoursStart || '17:00';
+  const onlineEnd = doctor.onlineWorkingHoursEnd || '20:00';
+
   for (let i = 0; i < daysAhead; i++) {
     const date = new Date(today);
     date.setDate(today.getDate() + i);
 
     const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-    if (daysOff.includes(dayName)) continue;
-
     const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
-    const [sh, sm] = startTime.split(':').map(Number);
-    const [eh, em] = endTime.split(':').map(Number);
 
-    let curMin = sh * 60 + sm;
-    const endMin = eh * 60 + em;
+    // 1. Generate In-Person Slots (or BOTH if not separate)
+    if (!daysOff.includes(dayName)) {
+      const [sh, sm] = startTime.split(':').map(Number);
+      const [eh, em] = endTime.split(':').map(Number);
+      let curMin = sh * 60 + sm;
+      const endMin = eh * 60 + em;
 
-    while (curMin + duration <= endMin) {
-      const hh = String(Math.floor(curMin / 60)).padStart(2, '0');
-      const mm = String(curMin % 60).padStart(2, '0');
-      const endMin2 = curMin + duration;
-      const hh2 = String(Math.floor(endMin2 / 60)).padStart(2, '0');
-      const mm2 = String(endMin2 % 60).padStart(2, '0');
+      while (curMin + duration <= endMin) {
+        const hh = String(Math.floor(curMin / 60)).padStart(2, '0');
+        const mm = String(curMin % 60).padStart(2, '0');
+        const endMin2 = curMin + duration;
+        const hh2 = String(Math.floor(endMin2 / 60)).padStart(2, '0');
+        const mm2 = String(endMin2 % 60).padStart(2, '0');
 
-      slots.push({
-        doctorId: doctor.id,
-        clinicId: 'settings',
-        date: dateStr,
-        startTime: `${hh}:${mm}`,
-        endTime: `${hh2}:${mm2}`,
-        isBooked: false,
-        createdAt: new Date().toISOString()
-      });
+        slots.push({
+          doctorId: doctor.id,
+          clinicId: 'settings',
+          date: dateStr,
+          startTime: `${hh}:${mm}`,
+          endTime: `${hh2}:${mm2}`,
+          isBooked: false,
+          type: (allowOnline && !hasSeparate) ? 'both' : 'in-person',
+          createdAt: new Date().toISOString()
+        });
 
-      curMin += duration;
+        curMin += duration;
+      }
+    }
+
+    // 2. Generate Separate Online Slots
+    if (allowOnline && hasSeparate && !onlineDaysOff.includes(dayName)) {
+      const [sh, sm] = onlineStart.split(':').map(Number);
+      const [eh, em] = onlineEnd.split(':').map(Number);
+      let curMin = sh * 60 + sm;
+      const endMin = eh * 60 + em;
+
+      while (curMin + duration <= endMin) {
+        const hh = String(Math.floor(curMin / 60)).padStart(2, '0');
+        const mm = String(curMin % 60).padStart(2, '0');
+        const endMin2 = curMin + duration;
+        const hh2 = String(Math.floor(endMin2 / 60)).padStart(2, '0');
+        const mm2 = String(endMin2 % 60).padStart(2, '0');
+
+        // Avoid duplicating slots at same time
+        const exists = slots.find(s => s.date === dateStr && s.startTime === `${hh}:${mm}`);
+        if (!exists) {
+          slots.push({
+            doctorId: doctor.id,
+            clinicId: 'settings',
+            date: dateStr,
+            startTime: `${hh}:${mm}`,
+            endTime: `${hh2}:${mm2}`,
+            isBooked: false,
+            type: 'online',
+            createdAt: new Date().toISOString()
+          });
+        } else if (exists.type === 'in-person') {
+          exists.type = 'both';
+        }
+
+        curMin += duration;
+      }
     }
   }
 

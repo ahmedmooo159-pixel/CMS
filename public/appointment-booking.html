@@ -297,7 +297,76 @@
         </div>
 
         <div>
-          <div class="summary-row">
+          <!-- Consultation Type Toggle -->
+          <div id="consultation-type-section" class="summary-row" style="flex-direction: column; align-items: stretch; gap: 0.5rem; border-bottom: none; padding-bottom: 0;">
+            <div class="summary-label" style="font-size: 0.85rem; font-weight: 600; text-align: right;">نوع الكشف</div>
+            <div style="display: flex; gap: 0.5rem; background: var(--bg-input); padding: 0.3rem; border-radius: 10px; border: 1px solid var(--border-color);">
+              <label style="flex: 1; text-align: center; cursor: pointer; margin: 0;">
+                <input type="radio" name="consultationType" value="in-person" checked style="display: none;" onchange="updateConsultationTypeUI()">
+                <div class="consultation-option in-person-opt active" style="padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; transition: all 0.3s; color: var(--text-muted);">
+                  <i class="fa-solid fa-house-medical"></i> في العيادة
+                </div>
+              </label>
+              <label style="flex: 1; text-align: center; cursor: pointer; margin: 0;">
+                <input type="radio" name="consultationType" value="online" style="display: none;" onchange="updateConsultationTypeUI()">
+                <div class="consultation-option online-opt" style="padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; transition: all 0.3s; color: var(--text-muted);">
+                  <i class="fa-solid fa-video"></i> أونلاين
+                </div>
+              </label>
+            </div>
+            <style>
+              input[name="consultationType"]:checked + .consultation-option {
+                background: var(--primary-color);
+                color: #fff !important;
+                box-shadow: 0 2px 8px rgba(79,70,229,0.3);
+              }
+            </style>
+            <script>
+              function updateConsultationTypeUI() {
+                const isOnline = document.querySelector('input[name="consultationType"]:checked').value === 'online';
+                // Remove active classes
+                document.querySelector('.in-person-opt').classList.remove('active');
+                document.querySelector('.online-opt').classList.remove('active');
+                // Add active to selected
+                if(isOnline) document.querySelector('.online-opt').classList.add('active');
+                else document.querySelector('.in-person-opt').classList.add('active');
+                
+                // Save to sessionStorage for booking.js
+                sessionStorage.setItem('booking_consultationType', isOnline ? 'online' : 'in-person');
+
+                if (typeof window.onConsultationTypeChange === 'function') {
+                  window.onConsultationTypeChange();
+                }
+              }
+              // Initialize
+              sessionStorage.setItem('booking_consultationType', 'in-person');
+            </script>
+          </div>
+
+          <div id="doctor-services-container" class="summary-row" style="flex-direction: column; align-items: stretch; gap: 0.5rem; border-bottom: none; padding-bottom: 0; display: none;">
+            <div class="summary-label" style="font-size: 0.85rem; font-weight: 600; text-align: right;">الخدمة المطلوبة</div>
+            <select id="doctor-service-select" class="form-input" style="padding: 0.5rem; font-size: 0.85rem;" onchange="updateServicePrice()">
+              <!-- Options will be populated by JS -->
+            </select>
+            <script>
+              function updateServicePrice() {
+                const select = document.getElementById('doctor-service-select');
+                if (select.options.length === 0) return;
+                
+                const selectedOption = select.options[select.selectedIndex];
+                const price = selectedOption.dataset.price;
+                const serviceName = selectedOption.value;
+                
+                if (price) {
+                  document.getElementById('sum-price').textContent = `${price} ج.م`;
+                  sessionStorage.setItem('booking_servicePrice', price);
+                  sessionStorage.setItem('booking_serviceName', serviceName);
+                }
+              }
+            </script>
+          </div>
+
+          <div class="summary-row" style="margin-top: 1rem;">
             <span class="summary-label">التاريخ</span>
             <span class="summary-val" id="sum-date">-- لم يُحدَّد --</span>
           </div>

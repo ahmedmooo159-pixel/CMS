@@ -74,25 +74,7 @@ async function startSlotsListener() {
           allSlots = generateSlotsOnTheFly(doctor, 30);
         }
 
-        // Group by date
-        slotsByDate = {};
-        allSlots.forEach(slot => {
-          if (!slotsByDate[slot.date]) slotsByDate[slot.date] = [];
-          slotsByDate[slot.date].push(slot);
-        });
-
-        // Sort slots in each date by startTime
-        Object.keys(slotsByDate).forEach(date => {
-          slotsByDate[date].sort((a, b) => a.startTime.localeCompare(b.startTime));
-        });
-
-        availableDates = Object.keys(slotsByDate).sort();
-
-        // Re-render UI
-        renderAvailableDays();
-        if (selectedDate) {
-          renderSlots(selectedDate);
-        }
+        processAndRenderSlots();
       },
       (err) => {
         console.error('Real-time slots listener error:', err);
@@ -101,6 +83,52 @@ async function startSlotsListener() {
       }
     );
 }
+
+// =========================================================
+// Process, Filter and Render Slots
+// =========================================================
+function processAndRenderSlots() {
+  const consultationType = sessionStorage.getItem('booking_consultationType') || 'in-person';
+  
+  // Filter slots by type
+  let filteredSlots = allSlots;
+  if (doctor && doctor.allowOnline !== false) {
+    filteredSlots = allSlots.filter(s => {
+      if (!s.type) return true; 
+      if (s.type === 'both') return true;
+      return s.type === consultationType;
+    });
+  } else {
+    filteredSlots = allSlots.filter(s => !s.type || s.type === 'in-person' || s.type === 'both');
+  }
+
+  // Group by date
+  slotsByDate = {};
+  filteredSlots.forEach(slot => {
+    if (!slotsByDate[slot.date]) slotsByDate[slot.date] = [];
+    slotsByDate[slot.date].push(slot);
+  });
+
+  // Sort slots in each date by startTime
+  Object.keys(slotsByDate).forEach(date => {
+    slotsByDate[date].sort((a, b) => a.startTime.localeCompare(b.startTime));
+  });
+
+  availableDates = Object.keys(slotsByDate).sort();
+
+  // Reset selected date/slot if it's no longer available under this view
+  if (selectedDate && !availableDates.includes(selectedDate)) {
+    onDaySelectChange(null);
+  }
+
+  // Re-render UI
+  renderAvailableDays();
+  if (selectedDate) {
+    renderSlots(selectedDate);
+  }
+}
+
+window.onConsultationTypeChange = processAndRenderSlots;
 
 // =========================================================
 // Mock Mode: Load Slots Once
@@ -120,17 +148,7 @@ async function loadSlotsMock() {
       allSlots = generateSlotsOnTheFly(doctor, 30);
     }
 
-    // Group by date
-    slotsByDate = {};
-    allSlots.forEach(slot => {
-      if (!slotsByDate[slot.date]) slotsByDate[slot.date] = [];
-      slotsByDate[slot.date].push(slot);
-    });
-
-    // Sort slots in each date by startTime
-    Object.keys(slotsByDate).forEach(date => {
-      slotsByDate[date].sort((a, b) => a.startTime.localeCompare(b.startTime));
-    });
+    processAndRenderSlots();
 
   } catch (err) {
     console.error('loadSlotsMock error:', err);
@@ -166,10 +184,31 @@ async function loadDoctor() {
         document.getElementById('sidebar-avatar').innerHTML =
           `<img src="${doctor.photo}" alt="${window.escHtml(doctor.name)}">`;
       }
+
+      // Hide online option if doctor disables it
+      if (doctor.allowOnline === false) {
+        const toggleSec = document.getElementById('consultation-type-section');
+        if (toggleSec) toggleSec.style.display = 'none';
+        sessionStorage.setItem('booking_consultationType', 'in-person');
+      }
     }
 
-    if (specialty?.basePrice) {
+    if (doctor && doctor.services && doctor.services.length > 0) {
+      const servicesContainer = document.getElementById('doctor-services-container');
+      const serviceSelect = document.getElementById('doctor-service-select');
+      
+      servicesContainer.style.display = 'flex';
+      serviceSelect.innerHTML = doctor.services.map((s, index) => 
+        `<option value="${s.name}" data-price="${s.price}" ${index === 0 ? 'selected' : ''}>${s.name} - ${s.price} ج.م</option>`
+      ).join('');
+      
+      if (typeof updateServicePrice === 'function') {
+        updateServicePrice();
+      }
+    } else if (specialty?.basePrice) {
       document.getElementById('sum-price').textContent = `${specialty.basePrice} ج.م`;
+      sessionStorage.setItem('booking_servicePrice', specialty.basePrice);
+      sessionStorage.setItem('booking_serviceName', 'كشف عادي');
     }
   } catch (err) {
     console.error('loadDoctor error:', err);
@@ -184,43 +223,84 @@ function generateSlotsOnTheFly(doc, daysAhead = 30) {
   const slots     = [];
   const today     = new Date();
   const duration  = doc.appointmentDuration || 30;
-  const startTime = doc.workingHoursStart   || '09:00';
-  const endTime   = doc.workingHoursEnd     || '17:00';
-  const daysOff   = doc.daysOff || [];
+
+  const allowOnline = doc.allowOnline !== false;
+  const hasSeparate = !!doc.hasSeparateOnlineHours;
+  const inPersonDaysOff = doc.daysOff || [];
+  const inPersonStart = doc.workingHoursStart || '09:00';
+  const inPersonEnd = doc.workingHoursEnd || '17:00';
+
+  const onlineDaysOff = doc.onlineDaysOff || [];
+  const onlineStart = doc.onlineWorkingHoursStart || '17:00';
+  const onlineEnd = doc.onlineWorkingHoursEnd || '20:00';
 
   for (let i = 0; i < daysAhead; i++) {
     const date = new Date(today);
     date.setDate(today.getDate() + i);
-
     const dayName = DAYS_EN[date.getDay()];
-    if (daysOff.includes(dayName)) continue;
-
     const dateStr = date.toISOString().split('T')[0];
-    const [sh, sm] = startTime.split(':').map(Number);
-    const [eh, em] = endTime.split(':').map(Number);
 
-    let curMin = sh * 60 + sm;
-    const endMin = eh * 60 + em;
-    let idx = 0;
+    // 1. In-person slots
+    if (!inPersonDaysOff.includes(dayName)) {
+      const [sh, sm] = inPersonStart.split(':').map(Number);
+      const [eh, em] = inPersonEnd.split(':').map(Number);
+      let curMin = sh * 60 + sm;
+      const endMin = eh * 60 + em;
+      let idx = 0;
 
-    while (curMin + duration <= endMin) {
-      const hh  = String(Math.floor(curMin / 60)).padStart(2, '0');
-      const mm  = String(curMin % 60).padStart(2, '0');
-      const end2 = curMin + duration;
-      const hh2 = String(Math.floor(end2 / 60)).padStart(2, '0');
-      const mm2 = String(end2 % 60).padStart(2, '0');
+      while (curMin + duration <= endMin) {
+        const hh  = String(Math.floor(curMin / 60)).padStart(2, '0');
+        const mm  = String(curMin % 60).padStart(2, '0');
+        const end2 = curMin + duration;
+        const hh2 = String(Math.floor(end2 / 60)).padStart(2, '0');
+        const mm2 = String(end2 % 60).padStart(2, '0');
 
-      slots.push({
-        id: `fly-${doc.id}-${dateStr}-${idx}`,
-        doctorId: doc.id,
-        date: dateStr,
-        startTime: `${hh}:${mm}`,
-        endTime:   `${hh2}:${mm2}`,
-        isBooked: false
-      });
+        slots.push({
+          id: `fly-inperson-${doc.id}-${dateStr}-${idx}`,
+          doctorId: doc.id,
+          date: dateStr,
+          startTime: `${hh}:${mm}`,
+          endTime:   `${hh2}:${mm2}`,
+          isBooked: false,
+          type: (allowOnline && !hasSeparate) ? 'both' : 'in-person'
+        });
+        curMin += duration;
+        idx++;
+      }
+    }
 
-      curMin += duration;
-      idx++;
+    // 2. Separate online slots
+    if (allowOnline && hasSeparate && !onlineDaysOff.includes(dayName)) {
+      const [sh, sm] = onlineStart.split(':').map(Number);
+      const [eh, em] = onlineEnd.split(':').map(Number);
+      let curMin = sh * 60 + sm;
+      const endMin = eh * 60 + em;
+      let idx = 0;
+
+      while (curMin + duration <= endMin) {
+        const hh  = String(Math.floor(curMin / 60)).padStart(2, '0');
+        const mm  = String(curMin % 60).padStart(2, '0');
+        const end2 = curMin + duration;
+        const hh2 = String(Math.floor(end2 / 60)).padStart(2, '0');
+        const mm2 = String(end2 % 60).padStart(2, '0');
+
+        const exists = slots.find(s => s.date === dateStr && s.startTime === `${hh}:${mm}`);
+        if (!exists) {
+          slots.push({
+            id: `fly-online-${doc.id}-${dateStr}-${idx}`,
+            doctorId: doc.id,
+            date: dateStr,
+            startTime: `${hh}:${mm}`,
+            endTime:   `${hh2}:${mm2}`,
+            isBooked: false,
+            type: 'online'
+          });
+        } else if (exists.type === 'in-person') {
+          exists.type = 'both';
+        }
+        curMin += duration;
+        idx++;
+      }
     }
   }
 

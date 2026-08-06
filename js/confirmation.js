@@ -100,13 +100,19 @@ function renderConfirmation() {
       document.getElementById('conf-subtitle').textContent = `تم تسجيل حجزك${queueMsg} يرجى الحضور في الموعد المحدد وإحضار هذا الرقم المرجعي.`;
     }
 
-    // ========== Tracking Link ==========
+    // ========== Tracking / Video Call Link ==========
     if (data.ref) {
-      const trackingUrl = `queue-radar.html?ref=${encodeURIComponent(data.ref)}`;
       const trackingLink = document.getElementById('queue-radar-btn');
       if (trackingLink) {
-        trackingLink.href = trackingUrl;
-        trackingLink.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> تتبع دورك الآن 📍';
+        if (data.consultationType === 'online') {
+          trackingLink.href = `video-call.html?ref=${encodeURIComponent(data.ref)}&role=patient`;
+          trackingLink.target = '_blank';
+          trackingLink.innerHTML = '<i class="fa-solid fa-video"></i> دخول الجلسة الأونلاين (مكالمة الفيديو) 🎥';
+          trackingLink.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        } else {
+          trackingLink.href = `queue-radar.html?ref=${encodeURIComponent(data.ref)}`;
+          trackingLink.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> تتبع دورك الآن 📍';
+        }
       }
       
       // Also set WhatsApp share link

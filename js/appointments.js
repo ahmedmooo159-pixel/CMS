@@ -33,8 +33,10 @@ const STATUS_LABELS = {
 };
 
 const PAY_LABELS = {
-  paid:   { label:'مدفوع',        cls:'badge-pay-paid' },
-  unpaid: { label:'غير مدفوع',   cls:'badge-pay-unpaid' },
+  paid:             { label:'مدفوع',                    cls:'badge-pay-paid' },
+  unpaid:           { label:'غير مدفوع',               cls:'badge-pay-unpaid' },
+  pending_approval: { label:'بانتظار مراجعة الإيصال', cls:'badge-pending' },
+  rejected:         { label:'رفض الإيصال',             cls:'badge-cancelled' },
 };
 
 // =========================================================
@@ -515,17 +517,37 @@ function openDetailModal(id) {
     <div class="detail-row"><span class="detail-label">الهاتف</span><span class="detail-val">${escHtml(patient.phone || '--')}</span></div>
     <div class="detail-row"><span class="detail-label">الطبيب</span><span class="detail-val">${escHtml(doctor.name || '--')}</span></div>
     <div class="detail-row"><span class="detail-label">التخصص</span><span class="detail-val">${escHtml(specialty.name || '--')}</span></div>
+    ${a.serviceName ? `<div class="detail-row"><span class="detail-label">الخدمة</span><span class="detail-val" style="color:var(--secondary-color);font-weight:700;">${escHtml(a.serviceName)}</span></div>` : ''}
+    <div class="detail-row"><span class="detail-label">نوع الكشف</span><span class="detail-val">${a.consultationType === 'online' ? '💻 أونلاين' : '🏥 في العيادة'}</span></div>
     <div class="detail-row"><span class="detail-label">التاريخ</span><span class="detail-val">${dateFormatted}</span></div>
     <div class="detail-row"><span class="detail-label">الوقت</span><span class="detail-val">${a.appointmentTime || '--'}</span></div>
     <div class="detail-row"><span class="detail-label">رقم الدور</span><span class="detail-val" style="color:var(--secondary-color);">${a.queueNumber ? `#${a.queueNumber}` : '--'}</span></div>
     <div class="detail-row"><span class="detail-label">الحالة</span><span class="badge ${st.cls}">${st.label}</span></div>
-    <div class="detail-row"><span class="detail-label">الدفع</span><span class="badge ${pay.cls}">${pay.label}</span></div>
+    <div class="detail-row"><span class="detail-label">طريقة الدفع</span><span class="detail-val">${a.paymentMethod === 'vodafone' ? 'فودافون كاش' : a.paymentMethod === 'instapay' ? 'InstaPay' : a.paymentMethod === 'online' ? 'دفع إلكتروني' : 'كاش عند الحضور'}</span></div>
+    <div class="detail-row"><span class="detail-label">حالة الدفع</span><span class="badge ${pay.cls}">${pay.label}</span></div>
     <div class="detail-row"><span class="detail-label">سعر الكشف</span><span class="detail-val" style="color:var(--success);">${a.price ? a.price + ' ج.م' : '--'}</span></div>
-    <div class="detail-row"><span class="detail-label">تاريخ الحجز</span><span class="detail-val" style="font-size:.85rem;">${createdAt}</span></div>`;
+    <div class="detail-row"><span class="detail-label">تاريخ الحجز</span><span class="detail-val" style="font-size:.85rem;">${createdAt}</span></div>
+    ${a.receiptUrl ? `
+    <div style="margin-top:1rem;">
+      <div style="font-weight:700;font-size:.9rem;margin-bottom:.5rem;color:var(--text-primary);"><i class="fa-solid fa-file-image" style="color:var(--secondary-color);margin-left:.4rem;"></i> إيصال التحويل</div>
+      <img src="${a.receiptUrl}" alt="إيصال" style="width:100%;max-height:280px;object-fit:contain;border-radius:10px;border:1px solid var(--border-color);cursor:pointer;" onclick="window.open('${a.receiptUrl}','_blank')">
+      <div style="font-size:.75rem;color:var(--text-muted);margin-top:.3rem;text-align:center;"><i class="fa-solid fa-magnifying-glass"></i> اضغط للتكبير</div>
+    </div>` : ''}`;
 
   // Action buttons inside modal
   document.getElementById('detail-actions').innerHTML = `
     <button class="btn btn-secondary" onclick="closeDetailModal()">إغلاق</button>
+    ${a.paymentStatus === 'pending_approval' ? `
+      <button class="btn btn-primary" onclick="approveReceipt('${a.id}');" style="background:var(--success);border-color:var(--success);">
+        <i class="fa-solid fa-circle-check"></i> تأكيد الدفع
+      </button>
+      <button class="btn btn-danger" onclick="rejectReceipt('${a.id}');">
+        <i class="fa-solid fa-xmark"></i> رفض الإيصال
+      </button>` : ''}
+    ${(a.consultationType === 'online' && a.status !== 'cancelled' && a.status !== 'completed') ? `
+      <a href="../public/video-call.html?ref=${encodeURIComponent(a.bookingRef)}&role=doctor" target="_blank" class="btn btn-primary" style="background:linear-gradient(135deg, #10b981, #059669);border-color:transparent;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:0.4rem;">
+        <i class="fa-solid fa-video"></i> بدء الجلسة الأونلاين 🎥
+      </a>` : ''}
     ${a.status === 'pending' ? `
       <button class="btn btn-primary" onclick="updateStatus('${a.id}','confirmed');closeDetailModal();">
         <i class="fa-solid fa-circle-check"></i> تأكيد الحجز
@@ -588,6 +610,44 @@ function exportCSV() {
 window.addEventListener('beforeunload', () => {
   if (unsubscribeAppts) unsubscribeAppts();
 });
+
+// =========================================================
+// Receipt Approve / Reject
+// =========================================================
+async function approveReceipt(id) {
+  try {
+    const update = { paymentStatus: 'paid', status: 'confirmed', updatedAt: new Date().toISOString() };
+    if (window.isFirebaseConfigured) {
+      await db.collection('appointments').doc(id).update(update);
+    }
+    const appt = allAppointments.find(a => a.id === id);
+    if (appt) Object.assign(appt, update);
+    if (!window.isFirebaseConfigured) localStorage.setItem('mock_appointments', JSON.stringify(allAppointments));
+    closeDetailModal();
+    renderTable();
+    showStatus('✔ تم تأكيد الدفع وتأكيد الحجز بنجاح.', 'success');
+  } catch (err) {
+    showStatus('خطأ في تأكيد الدفع: ' + err.message, 'error');
+  }
+}
+
+async function rejectReceipt(id) {
+  if (!confirm('هل أنت متأكد من رفض الإيصال؟ سيظل الحجز بحالة غير مدفوع.')) return;
+  try {
+    const update = { paymentStatus: 'rejected', updatedAt: new Date().toISOString() };
+    if (window.isFirebaseConfigured) {
+      await db.collection('appointments').doc(id).update(update);
+    }
+    const appt = allAppointments.find(a => a.id === id);
+    if (appt) Object.assign(appt, update);
+    if (!window.isFirebaseConfigured) localStorage.setItem('mock_appointments', JSON.stringify(allAppointments));
+    closeDetailModal();
+    renderTable();
+    showStatus('❌ تم رفض الإيصال. يرجى التواصل مع المريض لإعادة التحويل.', 'error');
+  } catch (err) {
+    showStatus('خطأ في رفض الإيصال: ' + err.message, 'error');
+  }
+}
 
 // =========================================================
 // Helpers

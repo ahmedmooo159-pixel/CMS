@@ -329,6 +329,15 @@
           </button>
         </div>
 
+        <!-- Services -->
+        <div class="form-group">
+          <label class="form-label">الخدمات الطبية والأسعار (للحجز)</label>
+          <div id="services-list"></div>
+          <button type="button" id="add-service-btn" class="btn btn-secondary" style="padding:.5rem 1rem;font-size:.85rem;margin-top:.25rem;">
+            <i class="fa-solid fa-plus"></i> إضافة خدمة (مثال: كشف عادي، سونار)
+          </button>
+        </div>
+
         <!-- Working Hours -->
         <div class="grid grid-cols-2 md-grid-cols-1 gap-4">
           <div class="form-group">
@@ -366,6 +375,70 @@
             <!-- Rendered by JS -->
           </div>
         </div>
+
+        <!-- Payment Details -->
+        <h4 style="font-family:var(--font-display);font-size:1.05rem;border-bottom:1px solid var(--border-color);padding-bottom:.5rem;margin-top:1.5rem;margin-bottom:1rem;">
+          <i class="fa-solid fa-credit-card" style="color:var(--secondary-color);margin-left:.4rem;"></i> بيانات الدفع الخاصة بالطبيب
+        </h4>
+        <div class="grid grid-cols-2 md-grid-cols-1 gap-4">
+          <div class="form-group">
+            <label for="vodafoneNumberInput" class="form-label">رقم فودافون كاش</label>
+            <input type="text" id="vodafoneNumberInput" class="form-input" placeholder="01XXXXXXXXX">
+          </div>
+          <div class="form-group">
+            <label for="instapayIdInput" class="form-label">معرّف InstaPay</label>
+            <input type="text" id="instapayIdInput" class="form-input" placeholder="name@instapay">
+          </div>
+        </div>
+
+        <!-- Allow Online Consultations Toggle -->
+        <div style="display:flex;align-items:center;gap:.75rem;margin-top:1.5rem;margin-bottom:1rem;border-top:1px solid var(--border-color);padding-top:1.25rem;">
+          <input type="checkbox" id="allowOnlineInput" checked style="width:18px;height:18px;cursor:pointer;accent-color:var(--primary-color);flex-shrink:0;" onchange="toggleOnlineMasterSection()">
+          <label for="allowOnlineInput" class="form-label" style="margin-bottom:0;cursor:pointer;color:var(--text-primary);font-weight:700;">تفعيل ميزة الكشف الأونلاين (فيديو) لهذا الطبيب</label>
+        </div>
+
+        <div id="online-settings-container">
+          <!-- Separate Online Hours Toggle -->
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
+            <input type="checkbox" id="hasSeparateOnlineHoursInput" style="width:18px;height:18px;cursor:pointer;accent-color:var(--primary-color);flex-shrink:0;" onchange="toggleOnlineHoursSection()">
+            <label for="hasSeparateOnlineHoursInput" class="form-label" style="margin-bottom:0;cursor:pointer;color:var(--text-primary);">تخصيص مواعيد عمل منفصلة لكشف الأونلاين</label>
+          </div>
+
+          <!-- Online Hours Section -->
+          <div id="online-hours-section" style="display:none;background:rgba(79,70,229,.03);border:1px solid var(--border-color);border-radius:12px;padding:1.25rem;margin-bottom:1.5rem;">
+            <div class="grid grid-cols-2 md-grid-cols-1 gap-4">
+              <div class="form-group">
+                <label for="onlineHoursStartInput" class="form-label">بداية وقت عمل الأونلاين</label>
+                <input type="time" id="onlineHoursStartInput" class="form-input" value="17:00">
+              </div>
+              <div class="form-group">
+                <label for="onlineHoursEndInput" class="form-label">نهاية وقت عمل الأونلاين</label>
+                <input type="time" id="onlineHoursEndInput" class="form-input" value="20:00">
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">أيام إجازة الأونلاين</label>
+              <div class="days-grid" id="online-days-off-grid">
+                <!-- Rendered by JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          function toggleOnlineMasterSection() {
+            const allowed = document.getElementById('allowOnlineInput').checked;
+            document.getElementById('online-settings-container').style.display = allowed ? 'block' : 'none';
+            if (!allowed) {
+              document.getElementById('hasSeparateOnlineHoursInput').checked = false;
+              toggleOnlineHoursSection();
+            }
+          }
+          function toggleOnlineHoursSection() {
+            const checked = document.getElementById('hasSeparateOnlineHoursInput').checked;
+            document.getElementById('online-hours-section').style.display = checked ? 'block' : 'none';
+          }
+        </script>
 
         <!-- Active status -->
         <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem;">

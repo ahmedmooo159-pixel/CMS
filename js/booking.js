@@ -11,8 +11,15 @@ const slotDate    = params.get('date')         || '';
 const slotStart   = params.get('startTime')    || '';
 const slotEnd     = params.get('endTime')      || '';
 
-let selectedPayment = 'cash';   // 'cash' | 'online'
+let selectedPayment = 'vodafone';   // 'cash' | 'online' | 'vodafone' | 'instapay'
 let selectedGender  = '';
+let receiptDataUrl  = null;  // base64 receipt image
+
+// Transfer account numbers (can be fetched from settings if needed)
+const TRANSFER_ACCOUNTS = {
+  vodafone: { number: '01XXXXXXXXXX', label: 'رقم فودافون كاش', icon: 'fa-mobile-screen-button', color: '#dc2626', title: 'تحويل عبر فودافون كاش' },
+  instapay: { number: 'clinic@instapay', label: 'معرف InstaPay', icon: 'fa-bolt', color: 'var(--primary-color)', title: 'تحويل عبر InstaPay' }
+};
 
 // =========================================================
 document.addEventListener('DOMContentLoaded', async () => {
@@ -47,9 +54,21 @@ async function populateSummary() {
       specialty = allSpecs.find(s => s.id === specialtyId) || null;
     }
 
-    if (doctor)    document.getElementById('sum-doctor').textContent    = doctor.name;
+    if (doctor) {
+      document.getElementById('sum-doctor').textContent    = doctor.name;
+      // Dynamically load doctor's own transfer accounts
+      TRANSFER_ACCOUNTS.vodafone.number = doctor.vodafoneNumber || 'غير متوفر حالياً';
+      TRANSFER_ACCOUNTS.instapay.number = doctor.instapayId || 'غير متوفر حالياً';
+      
+      // Refresh the instructions UI if a transfer method is selected
+      if (selectedPayment === 'vodafone' || selectedPayment === 'instapay') {
+        selectPayment(selectedPayment);
+      }
+    }
     if (specialty) document.getElementById('sum-specialty').textContent = specialty.name;
-    if (specialty?.basePrice) document.getElementById('sum-price').textContent = `${specialty.basePrice} ج.م`;
+    
+    const selectedPrice = parseFloat(sessionStorage.getItem('booking_servicePrice')) || specialty?.basePrice || 0;
+    document.getElementById('sum-price').textContent = `${selectedPrice} ج.م`;
 
     if (slotDate) {
       const d = new Date(slotDate + 'T00:00:00');
@@ -83,17 +102,74 @@ function selectPayment(method) {
   document.querySelectorAll('.payment-method-option').forEach(el => el.classList.remove('selected'));
   document.getElementById('pm-' + method).classList.add('selected');
 
-  const container = document.getElementById('paymob-container');
+  const paymobContainer    = document.getElementById('paymob-container');
+  const transferBox        = document.getElementById('transfer-instructions-box');
+  const confirmBtn         = document.getElementById('confirm-booking-btn');
+
+  // Reset all panels
+  paymobContainer.style.display = 'none';
+
   if (method === 'online') {
-    container.style.display = 'block';
-    document.getElementById('confirm-booking-btn').textContent = '';
-    document.getElementById('confirm-booking-btn').innerHTML =
-      '<i class="fa-solid fa-credit-card"></i> الدفع الإلكتروني وتأكيد الحجز';
+    transferBox.style.display = 'none';
+    confirmBtn.innerHTML = '<i class="fa-solid fa-credit-card"></i> الدفع الإلكتروني وتأكيد الحجز';
+    paymobContainer.style.display = 'block';
+  } else if (method === 'vodafone' || method === 'instapay') {
+    const acc = TRANSFER_ACCOUNTS[method];
+    transferBox.style.display = 'block';
+    document.getElementById('transfer-title').textContent = acc.title;
+    document.getElementById('transfer-number').textContent = acc.number;
+    document.getElementById('transfer-label').textContent = acc.label;
+    document.getElementById('transfer-icon').className = `fa-solid ${acc.icon}`;
+    document.getElementById('transfer-method-icon').className = `fa-solid ${acc.icon}`;
+    document.getElementById('transfer-icon').style.color = acc.color;
+    document.getElementById('transfer-method-icon').style.color = acc.color;
+    transferBox.style.background = method === 'vodafone' ? 'rgba(220,38,38,.06)' : 'rgba(79,70,229,.06)';
+    transferBox.style.borderColor = method === 'vodafone' ? 'rgba(220,38,38,.2)' : 'rgba(79,70,229,.2)';
+    confirmBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال طلب الحجز (بانتظار مراجعة الدفع)';
   } else {
-    container.style.display = 'none';
-    document.getElementById('confirm-booking-btn').innerHTML =
-      '<i class="fa-solid fa-calendar-check"></i> تأكيد الحجز';
+    transferBox.style.display = 'none';
+    confirmBtn.innerHTML = '<i class="fa-solid fa-calendar-check"></i> تأكيد الحجز';
   }
+}
+
+// =========================================================
+// Receipt Upload Helpers
+// =========================================================
+function handleReceiptUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (file.size > 5 * 1024 * 1024) {
+    alert('حجم الصورة كبير جداً. يرجى اختيار صورة أصغر من 5MB.');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    receiptDataUrl = e.target.result;
+    document.getElementById('receipt-img-preview').src = receiptDataUrl;
+    document.getElementById('receipt-preview').style.display = 'block';
+    document.getElementById('receipt-upload-label').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearReceipt() {
+  receiptDataUrl = null;
+  document.getElementById('receipt-upload').value = '';
+  document.getElementById('receipt-img-preview').src = '';
+  document.getElementById('receipt-preview').style.display = 'none';
+  document.getElementById('receipt-upload-label').style.display = 'flex';
+}
+
+function copyTransferNumber() {
+  const num = document.getElementById('transfer-number').textContent;
+  navigator.clipboard.writeText(num).then(() => {
+    const btn = event.target.closest('button');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> تم النسخ';
+    setTimeout(() => btn.innerHTML = orig, 2000);
+  });
 }
 
 // =========================================================
@@ -155,8 +231,34 @@ async function submitBooking() {
       return;
     }
 
+    // Vodafone Cash / InstaPay: require receipt
+    if (selectedPayment === 'vodafone' || selectedPayment === 'instapay') {
+      if (!receiptDataUrl) {
+        showStatus('يرجى رفع صورة إيصال التحويل أولاً قبل تأكيد الحجز.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال طلب الحجز';
+        return;
+      }
+      // Upload receipt to Firebase Storage or keep as base64 in mock
+      let receiptUrl = receiptDataUrl;
+      if (window.isFirebaseConfigured && window.storage) {
+        try {
+          showStatus('جاري رفع صورة الإيصال...', 'info');
+          const blob = await fetch(receiptDataUrl).then(r => r.blob());
+          const filename = `receipts/${Date.now()}_receipt.jpg`;
+          const storageRef = window.storage.ref(filename);
+          await storageRef.put(blob);
+          receiptUrl = await storageRef.getDownloadURL();
+        } catch (uploadErr) {
+          console.warn('Receipt upload failed, using base64:', uploadErr);
+        }
+      }
+      await saveAppointment(patient, '', selectedPayment, 'pending_approval', null, receiptUrl);
+      return;
+    }
+
     // Cash: save appointment directly
-    await saveAppointment(patient, '', 'cash', 'unpaid', null);
+    await saveAppointment(patient, '', 'cash', 'unpaid', null, null);
 
   } catch (err) {
     console.error('submitBooking error:', err);
@@ -169,7 +271,7 @@ async function submitBooking() {
 // =========================================================
 // Save Appointment to Firestore / localStorage
 // =========================================================
-async function saveAppointment(patient, notes, paymentMethod, paymentStatus, paymentId) {
+async function saveAppointment(patient, notes, paymentMethod, paymentStatus, paymentId, receiptUrl = null) {
   const doctor    = window._bookingDoctor;
   const specialty = window._bookingSpecialty;
   const ref       = generateBookingRef();
@@ -244,12 +346,15 @@ async function saveAppointment(patient, notes, paymentMethod, paymentStatus, pay
     paymentStatus,
     paymentMethod,
     paymentId:       paymentId || '',
-    price:           specialty?.basePrice || 0,
+    price:           parseFloat(sessionStorage.getItem('booking_servicePrice')) || specialty?.basePrice || 0,
     notes,
     bookingRef:      ref,
     queueNumber:     queueNumber,
+    consultationType: sessionStorage.getItem('booking_consultationType') || 'in-person',
+    serviceName:     sessionStorage.getItem('booking_serviceName') || '',
     reminderSMSSent: false,
     receiptSent:     false,
+    receiptUrl:      receiptUrl || '',
     createdAt: now, updatedAt: now
   };
 
