@@ -133,6 +133,16 @@ window.auth                = auth;
 window.isFirebaseConfigured = isFirebaseConfigured;
 window.requireAdmin        = requireAdmin;
 
+// Local Date Formatter Helper
+function getLocalISODate(date) {
+  if (!date) date = new Date();
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+window.getLocalISODate = getLocalISODate;
+
 // Cloudinary image upload helper
 async function uploadImageToCloudinary(file) {
   const cloudName = window.ENV?.CLOUDINARY_CLOUD_NAME || 'nfzcflqv';

@@ -637,7 +637,7 @@ async function generateSlotsForDoctor(doctor, daysAhead = 30) {
     date.setDate(today.getDate() + i);
 
     const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-    const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+    const dateStr = window.getLocalISODate(date); // YYYY-MM-DD
 
     // 1. Generate In-Person Slots (or BOTH if not separate)
     if (!daysOff.includes(dayName)) {
@@ -706,7 +706,7 @@ async function generateSlotsForDoctor(doctor, daysAhead = 30) {
 
   // Save to Firestore or mock storage
   if (window.isFirebaseConfigured) {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = window.getLocalISODate();
     const oldSlotsSnap = await db.collection('availableSlots')
        .where('doctorId', '==', doctor.id)
        .where('isBooked', '==', false)
@@ -748,7 +748,7 @@ async function generateSlotsForDoctor(doctor, daysAhead = 30) {
       id: `mock-slot-${doctor.id}-${s.date}-${i}`
     }));
     
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = window.getLocalISODate();
     // clear old future unbooked slots for doctor
     const existing = JSON.parse(localStorage.getItem('mock_slots') || '[]')
       .filter(s => !(s.doctorId === doctor.id && !s.isBooked && s.date >= todayStr));

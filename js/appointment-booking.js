@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 🔥 Real-time Slots Listener (بدل loadSlots القديمة)
 // =========================================================
 async function startSlotsListener() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = window.getLocalISODate();
 
   if (!window.isFirebaseConfigured) {
     // Mock mode: load once
@@ -135,7 +135,7 @@ window.onConsultationTypeChange = processAndRenderSlots;
 // =========================================================
 async function loadSlotsMock() {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = window.getLocalISODate();
 
     const raw = JSON.parse(localStorage.getItem('mock_slots') || '[]');
     allSlots  = raw.filter(s => s.doctorId === doctorId && !s.isBooked);
@@ -238,7 +238,7 @@ function generateSlotsOnTheFly(doc, daysAhead = 30) {
     const date = new Date(today);
     date.setDate(today.getDate() + i);
     const dayName = DAYS_EN[date.getDay()];
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = window.getLocalISODate(date);
 
     // 1. In-person slots
     if (!inPersonDaysOff.includes(dayName)) {

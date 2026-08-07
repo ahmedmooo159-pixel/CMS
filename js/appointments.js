@@ -14,6 +14,7 @@ let lastVisibleAppt = null;
 let isLoadingMore   = false;
 let unsubscribeAppts = null;  // 🔥 real-time listener
 
+
 // ---- DOM ----
 const tbody      = document.getElementById('appt-tbody');
 const statusEl   = document.getElementById('appt-status');
@@ -52,6 +53,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('detail-modal').addEventListener('click', e => { if (e.target.id === 'detail-modal') closeDetailModal(); });
   document.getElementById('export-btn').addEventListener('click', exportCSV);
   document.getElementById('reset-filters-btn').addEventListener('click', resetFilters);
+
+  // History modal close
+  document.getElementById('close-history-btn').addEventListener('click', () => {
+    document.getElementById('history-modal').style.display = 'none';
+  });
+  document.getElementById('history-modal').addEventListener('click', e => {
+    if (e.target.id === 'history-modal') document.getElementById('history-modal').style.display = 'none';
+  });
 
   // Manual cleanup button (optional, injected by HTML if present)
   const cleanupBtn = document.getElementById('cleanup-expired-btn');
@@ -559,7 +568,18 @@ function openDetailModal(id) {
     ${a.status === 'confirmed' ? `
       <button class="btn btn-success" onclick="updateStatus('${a.id}','completed');closeDetailModal();" style="background:var(--success);border-color:var(--success);">
         <i class="fa-solid fa-star"></i> إتمام الزيارة
-      </button>` : ''}`;
+      </button>` : ''}
+    ${(a.consultationType === 'online' && (a.status === 'confirmed' || a.status === 'pending') && !a.sessionStartedByDoctor) ? `
+      <button class="btn btn-primary" onclick="startSessionNow('${a.id}')" style="background:linear-gradient(135deg,#6d28d9,#7c3aed);border-color:transparent;">
+        <i class="fa-solid fa-play"></i> فتح الجلسة الآن
+      </button>` : ''}
+    ${(a.consultationType === 'online' && a.sessionStartedByDoctor) ? `
+      <span style="display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .8rem;border-radius:8px;background:rgba(16,185,129,.1);color:var(--success);font-size:.85rem;font-weight:600;border:1px solid rgba(16,185,129,.3);">
+        <i class="fa-solid fa-circle fa-beat" style="font-size:.5rem;"></i> الجلسة مفتوحة للمريض
+      </span>` : ''}
+    <button class="btn btn-secondary" onclick="openHistoryModal('${a.patientId}')" style="border-color:var(--secondary-color);color:var(--secondary-color);">
+      <i class="fa-solid fa-clock-rotate-left"></i> التاريخ المرضي
+    </button>`;
 
   document.getElementById('detail-modal').style.display = 'flex';
 }
@@ -657,4 +677,118 @@ function showStatus(msg, type = 'success') {
   statusEl.className   = `status-bar ${type}`;
   statusEl.style.display = 'block';
   setTimeout(() => { statusEl.style.display = 'none'; }, 4000);
+}
+
+// =========================================================
+// Start Session Now (Doctor opens online session)
+// =========================================================
+async function startSessionNow(apptId) {
+  try {
+    const now = new Date().toISOString();
+    if (window.isFirebaseConfigured) {
+      await db.collection('appointments').doc(apptId).update({ sessionStartedByDoctor: true, updatedAt: now });
+    } else {
+      const appts = JSON.parse(localStorage.getItem('mock_appointments') || '[]');
+      const idx   = appts.findIndex(a => a.id === apptId);
+      if (idx !== -1) { appts[idx].sessionStartedByDoctor = true; appts[idx].updatedAt = now; }
+      localStorage.setItem('mock_appointments', JSON.stringify(appts));
+    }
+
+    // Update local state
+    const appt = allAppointments.find(a => a.id === apptId);
+    if (appt) appt.sessionStartedByDoctor = true;
+
+    showStatus('✔ تم فتح الجلسة. يمكن للمريض الآن الانضمام.', 'success');
+    closeDetailModal();
+    renderTable();
+  } catch (err) {
+    showStatus('فشل فتح الجلسة: ' + err.message, 'error');
+  }
+}
+
+// =========================================================
+// Patient History Modal
+// =========================================================
+async function openHistoryModal(patientId) {
+  if (!patientId) {
+    alert('لا يوجد معرف مريض لهذا الحجز.');
+    return;
+  }
+
+  const modal = document.getElementById('history-modal');
+  const body  = document.getElementById('history-body');
+  body.innerHTML = '<div style="text-align:center;padding:2rem;"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...</div>';
+  modal.style.display = 'flex';
+
+  try {
+    const patient = allPatients.find(p => p.id === patientId) || {};
+    const patientName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'مريض';
+
+    let history = [];
+
+    if (window.isFirebaseConfigured) {
+      const snap = await db.collection('appointments')
+        .where('patientId', '==', patientId)
+        .orderBy('appointmentDate', 'desc')
+        .get();
+      snap.forEach(d => history.push({ id: d.id, ...d.data() }));
+    } else {
+      const all = JSON.parse(localStorage.getItem('mock_appointments') || '[]');
+      history = all
+        .filter(a => a.patientId === patientId)
+        .sort((a, b) => (b.appointmentDate || '').localeCompare(a.appointmentDate || ''));
+    }
+
+    if (history.length === 0) {
+      body.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-muted);"><i class="fa-solid fa-folder-open" style="font-size:2.5rem;opacity:.4;"></i><p style="margin-top:1rem;">لا يوجد تاريخ مرضي مسجّل لهذا المريض.</p></div>`;
+      return;
+    }
+
+    const STATUS_LABELS_LOCAL = {
+      pending:    { label:'في الانتظار', cls:'badge-pending'   },
+      confirmed:  { label:'مؤكدة',       cls:'badge-confirmed' },
+      arrived:    { label:'وصل',         cls:'badge-confirmed' },
+      in_session: { label:'داخل الجلسة',  cls:'badge-confirmed' },
+      completed:  { label:'مكتملة',      cls:'badge-completed' },
+      cancelled:  { label:'ملغاة',       cls:'badge-cancelled' },
+    };
+
+    body.innerHTML = `
+      <div style="margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border-color);">
+        <div style="font-size:.85rem;color:var(--text-muted);">المريض</div>
+        <div style="font-weight:700;font-size:1.05rem;">${escHtml(patientName)}</div>
+        ${patient.phone ? `<div style="font-size:.8rem;color:var(--secondary-color);">${escHtml(patient.phone)}</div>` : ''}
+        <div style="margin-top:.5rem;font-size:.8rem;color:var(--text-muted);">إجمالي الجلسات: <strong style="color:var(--primary-color);">${history.length}</strong></div>
+      </div>
+      ${history.map(a => {
+        const doctor    = allDoctors.find(d => d.id === a.doctorId) || {};
+        const specialty = allSpecialties.find(s => s.id === a.specialtyId) || {};
+        const st        = STATUS_LABELS_LOCAL[a.status] || { label: a.status, cls:'badge-pending' };
+        const dateLabel = a.appointmentDate
+          ? new Date(a.appointmentDate + 'T00:00:00').toLocaleDateString('ar-EG', { weekday:'short', year:'numeric', month:'short', day:'numeric' })
+          : '--';
+        const createdAtLabel = a.createdAt ? new Date(a.createdAt).toLocaleDateString('ar-EG') : '--';
+        return `
+          <div style="background:rgba(255,255,255,.03);border:1px solid var(--border-color);border-radius:10px;padding:1rem;margin-bottom:.75rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;flex-wrap:wrap;gap:.3rem;">
+              <span style="font-family:monospace;font-size:.8rem;color:var(--text-muted);">${a.bookingRef || a.id?.slice(0,8) || '--'}</span>
+              <span class="badge ${st.cls}">${st.label}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem .75rem;font-size:.85rem;">
+              <div><span style="color:var(--text-muted);">الطبيب: </span><strong>${escHtml(doctor.name || '--')}</strong></div>
+              <div><span style="color:var(--text-muted);">التخصص: </span><strong>${escHtml(specialty.name || '--')}</strong></div>
+              <div><span style="color:var(--text-muted);">التاريخ: </span><strong>${dateLabel}</strong></div>
+              <div><span style="color:var(--text-muted);">الوقت: </span><strong>${a.appointmentTime || '--'}</strong></div>
+              ${a.serviceName ? `<div><span style="color:var(--text-muted);">الخدمة: </span><strong style="color:var(--secondary-color);">${escHtml(a.serviceName)}</strong></div>` : ''}
+              ${a.price ? `<div><span style="color:var(--text-muted);">السعر: </span><strong style="color:var(--success);">${a.price} ج.م</strong></div>` : ''}
+              <div><span style="color:var(--text-muted);">النوع: </span><strong>${a.consultationType === 'online' ? '💻 أونلاين' : '🏥 عيادة'}</strong></div>
+              <div><span style="color:var(--text-muted);">تاريخ الحجز: </span><strong>${createdAtLabel}</strong></div>
+            </div>
+          </div>`;
+      }).join('')}`;
+
+  } catch (err) {
+    console.error('openHistoryModal error:', err);
+    body.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--danger);">خطأ في تحميل البيانات: ${err.message}</div>`;
+  }
 }

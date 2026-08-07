@@ -1,193 +1,262 @@
-/**
- * inquiries.js — Admin: Load and manage patient contact tickets.
- * Reads from Firestore collection "inquiries" or localStorage fallback.
- */
+// =========================================================
+// inquiries.js  –  Patient Booking Inquiry Logic
+// =========================================================
 
-(function () {
-  const tbody       = document.getElementById('inquiries-tbody');
-  const searchInput = document.getElementById('search-inquiries');
-  const filterSel   = document.getElementById('filter-inquiry-status');
-  const badge       = document.getElementById('new-inquiries-badge');
-
-  if (!tbody) return;
-
-  let allInquiries = [];
-
-  const subjectLabels = {
-    booking:   'استفسار عن الحجز',
-    price:     'استفسار عن الأسعار',
-    doctor:    'الاستفسار عن طبيب',
-    complaint: 'شكوى أو ملاحظة',
-    other:     'أخرى',
-  };
-
-  function formatDate(iso) {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    return d.toLocaleDateString('ar-EG', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  }
-
-  function statusBadge(status) {
-    const map = {
-      new:      { label: 'جديد',    cls: 'new'      },
-      read:     { label: 'مقروء',   cls: 'read'     },
-      resolved: { label: 'تم الحل', cls: 'resolved' },
-    };
-    const s = map[status] || { label: status, cls: 'read' };
-    return `<span class="inquiry-status ${s.cls}">${s.label}</span>`;
-  }
-
-  function formatPhoneForWA(phoneStr) {
-    let clean = (phoneStr || '').replace(/\D/g, '');
-    if (clean.startsWith('0')) {
-      clean = '20' + clean.slice(1);
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    if (window.isFirebaseConfigured) {
+      const doc = await db.collection('clinics').doc('settings').get();
+      if (doc.exists && doc.data().name) {
+        document.getElementById('clinic-name').textContent = doc.data().name;
+      }
+    } else {
+      const s = JSON.parse(localStorage.getItem('mock_firestore_clinics_settings') || '{}');
+      if (s.name) document.getElementById('clinic-name').textContent = s.name;
     }
-    return clean;
+  } catch (_) {}
+
+  document.getElementById('input-phone').addEventListener('keydown', e => { if (e.key === 'Enter') searchAppointments(); });
+});
+
+async function searchAppointments() {
+  const rawPhone = document.getElementById('input-phone').value.trim();
+
+  if (!rawPhone) {
+    showStatus('يرجى إدخال رقم الهاتف.', 'error');
+    return;
   }
 
-  function renderRows(list) {
-    if (!list.length) {
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="7"><i class="fa-solid fa-inbox" style="font-size:2rem;opacity:.3;"></i><p style="margin-top:.75rem;">لا توجد استفسارات بعد.</p></td></tr>`;
+  const btn = document.getElementById('search-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري البحث...`;
+  hideStatus();
+
+  try {
+    let appointments = [];
+    const inputPhone = rawPhone.replace(/\s/g, '');
+    let patientIds = [];
+
+    if (window.isFirebaseConfigured) {
+      // Find patients with this phone
+      const pSnap = await db.collection('patients').where('phone', '==', inputPhone).get();
+      pSnap.forEach(doc => patientIds.push(doc.id));
+
+      if (patientIds.length > 0) {
+        // limit 'in' queries to 10
+        const batchIds = patientIds.slice(0, 10);
+        const apptSnap = await db.collection('appointments').where('patientId', 'in', batchIds).get();
+        apptSnap.forEach(doc => appointments.push({ id: doc.id, ...doc.data() }));
+      }
+      
+      // Also search by patientPhone directly on appointments just in case
+      const apptPhoneSnap = await db.collection('appointments').where('patientPhone', '==', inputPhone).get();
+      apptPhoneSnap.forEach(doc => {
+        if (!appointments.find(a => a.id === doc.id)) {
+          appointments.push({ id: doc.id, ...doc.data() });
+        }
+      });
+    } else {
+      // Mock mode
+      const allAppts  = JSON.parse(localStorage.getItem('mock_appointments') || '[]');
+      const allPatients = JSON.parse(localStorage.getItem('mock_patients') || '[]');
+      
+      const patientsWithPhone = allPatients.filter(p => (p.phone || '').replace(/\s/g, '') === inputPhone).map(p => p.id);
+      
+      appointments = allAppts.filter(a => 
+        (a.patientPhone || '').replace(/\s/g, '') === inputPhone || 
+        (a.patientId && patientsWithPhone.includes(a.patientId))
+      );
+    }
+
+    if (appointments.length === 0) {
+      showStatus('لم يتم العثور على حجوزات مسجلة برقم الهاتف هذا.', 'error');
       return;
     }
 
-    tbody.innerHTML = list.map(item => `
-      <tr data-id="${item.id}">
-        <td><strong>${window.escHtml ? window.escHtml(item.name) : item.name}</strong></td>
-        <td><a href="https://wa.me/${formatPhoneForWA(item.phone)}" target="_blank" class="whatsapp-btn" style="font-size:.75rem;">
-          <i class="fa-brands fa-whatsapp"></i> ${item.phone}
-        </a></td>
-        <td>${subjectLabels[item.subject] || item.subjectLabel || item.subject}</td>
-        <td style="max-width:200px; font-size:.8rem; color:var(--text-muted);">
-          <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${window.escHtml ? window.escHtml(item.message) : item.message}</div>
-        </td>
-        <td style="font-size:.8rem;">${formatDate(item.createdAt)}</td>
-        <td>${statusBadge(item.status || 'new')}</td>
-        <td>
-          <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
-            <button class="tbl-btn" style="color:#25D366;border-color:rgba(37,211,102,.3);" onclick="viewAndReplyInquiry('${item.id}')" title="عرض ورد"><i class="fa-solid fa-reply"></i> عرض ورد</button>
-            ${item.status !== 'resolved' ? `<button class="tbl-btn" onclick="markInquiry('${item.id}', 'resolved')" title="تم الحل"><i class="fa-solid fa-circle-check"></i></button>` : ''}
-            ${item.status === 'new' ? `<button class="tbl-btn" onclick="markInquiry('${item.id}', 'read')" title="تمييز مقروء"><i class="fa-solid fa-eye"></i></button>` : ''}
-            <button class="tbl-btn" style="color:var(--danger);border-color:rgba(220,38,38,.3);" onclick="deleteInquiry('${item.id}')" title="حذف"><i class="fa-solid fa-trash"></i></button>
-          </div>
-        </td>
-      </tr>`).join('');
-  }
+    // Sort and separate upcoming vs past
+    const todayStr = window.getLocalISODate ? window.getLocalISODate() : new Date().toISOString().split('T')[0];
+    
+    // Also get current time to check if session can be joined
+    const now = new Date();
+    const currentMin = now.getHours() * 60 + now.getMinutes();
 
-  function applyFilters() {
-    const q = (searchInput ? searchInput.value : '').toLowerCase();
-    const f = (filterSel   ? filterSel.value   : 'all');
-    const filtered = allInquiries.filter(item => {
-      const matchQ = !q || item.name.toLowerCase().includes(q) || item.phone.includes(q);
-      const matchF = f === 'all' || (item.status || 'new') === f;
-      return matchQ && matchF;
-    });
-    renderRows(filtered);
-  }
+    let upcoming = [];
+    let past = [];
 
-  window.loadInquiries = async function () {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="7"><i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;color:var(--primary-color);"></i><p style="margin-top:.75rem;">جاري تحميل الاستفسارات...</p></td></tr>`;
-    try {
-      if (window.isFirebaseConfigured && window.db) {
-        const snap = await window.db.collection('inquiries').orderBy('createdAtMs', 'desc').limit(100).get();
-        allInquiries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      } else {
-        const stored = JSON.parse(localStorage.getItem('clinic_inquiries') || '[]');
-        allInquiries = stored.map((t, i) => ({ ...t, id: t.id || 'local_' + i }));
-      }
-
-      // Update badge
-      const newCount = allInquiries.filter(i => (i.status || 'new') === 'new').length;
-      if (badge) {
-        badge.textContent = newCount;
-        badge.style.display = newCount > 0 ? 'inline-block' : 'none';
-      }
-
-      applyFilters();
-    } catch (err) {
-      console.error('Error loading inquiries:', err);
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="7">حدث خطأ أثناء تحميل الاستفسارات.</td></tr>`;
-    }
-  };
-
-  window.markInquiry = async function (id, newStatus) {
-    try {
-      if (window.isFirebaseConfigured && window.db) {
-        await window.db.collection('inquiries').doc(id).update({ status: newStatus });
-      } else {
-        const stored = JSON.parse(localStorage.getItem('clinic_inquiries') || '[]');
-        const idx = stored.findIndex(t => t.id === id);
-        if (idx !== -1) { stored[idx].status = newStatus; localStorage.setItem('clinic_inquiries', JSON.stringify(stored)); }
-      }
-      const item = allInquiries.find(i => i.id === id);
-      if (item) item.status = newStatus;
-      applyFilters();
-      // Re-compute badge
-      const newCount = allInquiries.filter(i => (i.status || 'new') === 'new').length;
-      if (badge) { badge.textContent = newCount; badge.style.display = newCount > 0 ? 'inline-block' : 'none'; }
-    } catch (err) { console.error('markInquiry error:', err); }
-  };
-
-  window.deleteInquiry = async function (id) {
-    if (!confirm('هل أنت متأكد من حذف هذا الاستفسار؟')) return;
-    try {
-      if (window.isFirebaseConfigured && window.db) {
-        await window.db.collection('inquiries').doc(id).delete();
-      } else {
-        const stored = JSON.parse(localStorage.getItem('clinic_inquiries') || '[]');
-        localStorage.setItem('clinic_inquiries', JSON.stringify(stored.filter(t => t.id !== id)));
-      }
-      allInquiries = allInquiries.filter(i => i.id !== id);
-      applyFilters();
-    } catch (err) { console.error('deleteInquiry error:', err); }
-  };
-
-  window.viewAndReplyInquiry = function(id) {
-    const item = allInquiries.find(i => i.id === id);
-    if (!item) return;
-
-    const msgEl = document.getElementById('inquiry-full-message');
-    if (msgEl) msgEl.textContent = item.message;
-
-    const replyTextEl = document.getElementById('inquiry-reply-text');
-    if (replyTextEl) replyTextEl.value = '';
-
-    const modal = document.getElementById('inquiry-modal');
-    if (modal) {
-      modal.style.display = 'flex';
+    appointments.forEach(appt => {
+      // If it has no date, treat as past/invalid
+      if (!appt.appointmentDate) { past.push(appt); return; }
       
-      const sendBtn = document.getElementById('send-inquiry-wa-btn');
-      sendBtn.onclick = function() {
-        const answer = replyTextEl.value.trim();
-        const clinicName = document.querySelector('.sidebar-logo span')?.textContent || 'العيادة';
-        
-        let waText = `أهلاً وسهلاً بك في ${clinicName}،\nبخصوص استفساركم نود توضيح الآتي:\n\n${answer}`;
-        if (!answer) {
-          waText = `أهلاً وسهلاً بك في ${clinicName}،\nبخصوص استفساركم نود توضيح الآتي:\n\n`;
+      if (appt.appointmentDate > todayStr) {
+        upcoming.push(appt);
+      } else if (appt.appointmentDate === todayStr) {
+        // Today, check time. Assuming appointments today are upcoming until marked completed/cancelled
+        if (appt.status === 'completed' || appt.status === 'cancelled') {
+           past.push(appt);
+        } else {
+           upcoming.push(appt);
         }
-        
-        const waPhone = formatPhoneForWA(item.phone);
-        window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(waText)}`, '_blank');
-        
-        // Auto-mark as resolved if not already
-        if (item.status !== 'resolved') {
-          window.markInquiry(id, 'resolved');
-        }
-        modal.style.display = 'none';
-      };
+      } else {
+        past.push(appt);
+      }
+    });
+
+    // sort upcoming by date asc, past by date desc
+    upcoming.sort((a, b) => {
+       const da = a.appointmentDate + ' ' + (a.appointmentTime || '');
+       const db = b.appointmentDate + ' ' + (b.appointmentTime || '');
+       return da.localeCompare(db);
+    });
+    
+    past.sort((a, b) => {
+       const da = a.appointmentDate + ' ' + (a.appointmentTime || '');
+       const db = b.appointmentDate + ' ' + (b.appointmentTime || '');
+       return db.localeCompare(da); // desc
+    });
+
+    await renderResults(upcoming, past, currentMin, todayStr);
+    
+    document.getElementById('lookup-card').style.display = 'none';
+    document.getElementById('results-area').style.display = 'block';
+
+  } catch (err) {
+    console.error('searchAppointments error:', err);
+    showStatus('حدث خطأ أثناء البحث: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> البحث عن الحجوزات`;
+  }
+}
+
+async function renderResults(upcoming, past, currentMin, todayStr) {
+  const upContainer = document.getElementById('upcoming-appointments');
+  const pastContainer = document.getElementById('past-appointments');
+  
+  upContainer.innerHTML = '<h3 class="section-title"><i class="fa-solid fa-calendar-day" style="color:var(--primary-color);margin-left:.5rem;"></i> الحجوزات القادمة</h3>';
+  pastContainer.innerHTML = '<h3 class="section-title"><i class="fa-solid fa-clock-rotate-left" style="color:var(--text-muted);margin-left:.5rem;"></i> التاريخ المرضي (الجلسات السابقة)</h3>';
+
+  if (upcoming.length === 0) {
+    upContainer.innerHTML += '<p style="color:var(--text-muted);font-size:.9rem;">لا توجد حجوزات قادمة.</p>';
+  } else {
+    for (let appt of upcoming) {
+      upContainer.innerHTML += await buildApptCard(appt, true, currentMin, todayStr);
+    }
+  }
+
+  if (past.length === 0) {
+    pastContainer.innerHTML += '<p style="color:var(--text-muted);font-size:.9rem;">لا يوجد تاريخ مرضي مسجل.</p>';
+  } else {
+    for (let appt of past) {
+      pastContainer.innerHTML += await buildApptCard(appt, false, currentMin, todayStr);
+    }
+  }
+}
+
+async function buildApptCard(appt, isUpcoming, currentMin, todayStr) {
+  let doctorName = appt.doctorId || '--';
+  try {
+    if (window.isFirebaseConfigured) {
+      const dDoc = await db.collection('doctors').doc(appt.doctorId).get();
+      if (dDoc.exists) doctorName = dDoc.data().name || doctorName;
     } else {
-      alert(item.message);
+      const docs = JSON.parse(localStorage.getItem('mock_doctors') || '[]');
+      const d = docs.find(x => x.id === appt.doctorId);
+      if (d) doctorName = d.name;
     }
+  } catch (_) {}
+
+  const d = appt.appointmentDate ? new Date(appt.appointmentDate + 'T00:00:00') : null;
+  const dateLabel = d ? d.toLocaleDateString('ar-EG', { weekday:'long', year:'numeric', month:'long', day:'numeric' }) : '--';
+
+  const statusMap = {
+    pending:    { label:'في الانتظار',  cls:'badge-pending'   },
+    confirmed:  { label:'مؤكدة',        cls:'badge-confirmed' },
+    arrived:    { label:'وصل',          cls:'badge-confirmed' },
+    in_session: { label:'الجلسة مستمرة',cls:'badge-confirmed' },
+    completed:  { label:'مكتملة',       cls:'badge-completed' },
+    cancelled:  { label:'ملغاة',        cls:'badge-cancelled' },
   };
+  const st = statusMap[appt.status] || { label: appt.status, cls:'badge-pending' };
+  
+  // Logic for "Join Session"
+  let joinBtnHtml = '';
+  if (isUpcoming && appt.type === 'online' && appt.status !== 'cancelled') {
+     let canJoin = false;
+     
+     if (appt.sessionStartedByDoctor === true) {
+        canJoin = true;
+     } else if (appt.appointmentDate === todayStr && appt.appointmentTime) {
+        const [hh, mm] = appt.appointmentTime.split(':').map(Number);
+        const apptMin = (hh * 60) + (mm || 0);
+        // Allow joining 5 minutes before or if it's time
+        if (currentMin >= apptMin - 5) {
+           canJoin = true;
+        }
+     }
+     
+     if (canJoin) {
+        joinBtnHtml = `
+          <div style="margin-top: 1rem;">
+             <a href="video-call.html?roomId=${appt.id}" class="btn btn-primary" style="width:100%;">
+                <i class="fa-solid fa-video"></i> الانضمام إلى الجلسة
+             </a>
+          </div>
+        `;
+     } else {
+        joinBtnHtml = `
+          <div style="margin-top: 1rem;">
+             <button class="btn btn-secondary" style="width:100%;" disabled title="لا يمكن الانضمام الآن. سيفتح الزر في موعد الجلسة أو عند بدء الدكتور للجلسة.">
+                <i class="fa-solid fa-video-slash"></i> الانضمام إلى الجلسة (مغلق)
+             </button>
+             <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 0.25rem;">يُتاح الانضمام في موعد الجلسة أو عندما يبدأ الطبيب</div>
+          </div>
+        `;
+     }
+  }
 
-  if (searchInput) searchInput.addEventListener('input', applyFilters);
-  if (filterSel)   filterSel.addEventListener('change', applyFilters);
+  return `
+    <div class="appointment-card">
+      <div class="detail-row">
+        <div class="detail-icon"><i class="fa-solid fa-hashtag"></i></div>
+        <div><div class="detail-label">رقم الحجز</div><div class="detail-val" style="font-family:monospace;font-size:1.1rem;color:var(--primary-color);">${appt.bookingRef || appt.id || '--'}</div></div>
+        <div style="margin-right:auto;"><span class="badge ${st.cls}">${st.label}</span></div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-icon"><i class="fa-solid fa-user-doctor"></i></div>
+        <div><div class="detail-label">الطبيب</div><div class="detail-val">${doctorName}</div></div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-icon"><i class="fa-solid fa-calendar-day"></i></div>
+        <div><div class="detail-label">التاريخ</div><div class="detail-val">${dateLabel}</div></div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-icon"><i class="fa-solid fa-clock"></i></div>
+        <div><div class="detail-label">الوقت</div><div class="detail-val">${appt.appointmentTime || '--'}</div></div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-icon"><i class="fa-solid ${appt.type === 'online' ? 'fa-video' : 'fa-building'}"></i></div>
+        <div><div class="detail-label">نوع الجلسة</div><div class="detail-val">${appt.type === 'online' ? 'أونلاين' : 'في العيادة'}</div></div>
+      </div>
+      
+      ${joinBtnHtml}
+    </div>
+  `;
+}
 
-  // Auto-load after auth is ready
-  const checkAuth = setInterval(() => {
-    if (window.db !== undefined || window.isFirebaseConfigured === false) {
-      clearInterval(checkAuth);
-      window.loadInquiries();
-    }
-  }, 400);
-})();
+function showStatus(msg, type = 'info') {
+  const el = document.getElementById('page-status');
+  el.textContent = msg;
+  el.className = `status-bar ${type}`;
+  el.style.display = 'block';
+}
+
+function hideStatus() {
+  document.getElementById('page-status').style.display = 'none';
+}
+
+function resetForm() {
+  document.getElementById('input-phone').value = '';
+  document.getElementById('lookup-card').style.display = 'block';
+  document.getElementById('results-area').style.display = 'none';
+  hideStatus();
+}
