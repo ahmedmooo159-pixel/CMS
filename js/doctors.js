@@ -107,11 +107,15 @@ function bindGlobalEvents() {
 // =========================================================
 async function loadSpecialties() {
   try {
-    if (window.isFirebaseConfigured) {
+    const cached = window.AppCache?.get('specialties');
+    if (cached) {
+      specialtiesList = cached;
+    } else if (window.isFirebaseConfigured) {
       const snap = await db.collection('specialties').where('isActive', '==', true).get();
       if (snap.size > 100) console.warn('Warning: Fetched >100 docs in doctors.js from specialties without limit');
       specialtiesList = [];
       snap.forEach(doc => specialtiesList.push({ id: doc.id, ...doc.data() }));
+      window.AppCache?.set('specialties', specialtiesList);
     } else {
       specialtiesList = JSON.parse(localStorage.getItem('mock_specialties') || '[]').filter(s => s.isActive !== false);
     }
@@ -527,6 +531,8 @@ async function handleFormSubmit(e) {
     }
 
     closeModal();
+    // Invalidate doctors cache so other pages re-fetch fresh data
+    window.AppCache?.invalidate('doctors');
     renderDoctors();
   } catch (err) {
     console.error('handleFormSubmit error:', err);
@@ -550,6 +556,7 @@ async function toggleActive(id) {
     }
     doc.isActive = newActive;
     if (!window.isFirebaseConfigured) saveMockDoctors();
+    window.AppCache?.invalidate('doctors');
     renderDoctors();
     showStatus(newActive ? '✔ تم تفعيل الطبيب.' : '✔ تم تعطيل الطبيب.', 'success');
   } catch (err) {
@@ -584,6 +591,7 @@ async function executeDelete() {
     }
     doctorsList = doctorsList.filter(d => d.id !== id);
     if (!window.isFirebaseConfigured) saveMockDoctors();
+    window.AppCache?.invalidate('doctors');
     renderDoctors();
     showStatus('✔ تم حذف الطبيب بنجاح.', 'success');
   } catch (err) {

@@ -20,6 +20,18 @@ try {
     auth = firebase.auth();
     isFirebaseConfigured = true;
     console.log("Firebase initialized successfully with project: clinc-mangment-system");
+
+    // Enable Firestore offline persistence (IndexedDB-based)
+    // This means repeated reads on the same data won't hit the network.
+    db.enablePersistence({ synchronizeTabs: true })
+      .then(() => console.log('[Cache] Firestore offline persistence enabled.'))
+      .catch(err => {
+        if (err.code === 'failed-precondition') {
+          console.warn('[Cache] Persistence: multiple tabs open, falling back to memory.');
+        } else if (err.code === 'unimplemented') {
+          console.warn('[Cache] Persistence: browser does not support IndexedDB.');
+        }
+      });
   } else {
     if (isProduction) {
       alert("Critical Error: Firebase is not configured in a production environment.");
@@ -142,6 +154,87 @@ function getLocalISODate(date) {
   return `${y}-${m}-${d}`;
 }
 window.getLocalISODate = getLocalISODate;
+
+// =========================================================
+// AppCache – sessionStorage cache with TTL
+// =========================================================
+// Usage:
+//   AppCache.get('doctors')              → array or null
+//   AppCache.set('doctors', data)        → saves with default TTL
+//   AppCache.set('settings', data, 60)   → saves with 60-min TTL
+//   AppCache.invalidate('doctors')       → clear one key
+//   AppCache.invalidateGroup('admin')    → clear all admin-tagged keys
+//
+// TTL defaults (minutes):
+//   doctors, patients, specialties → sessionStorage (per tab session, no TTL needed)
+//   settings/branding              → localStorage, 60 min TTL
+// =========================================================
+const AppCache = (() => {
+  // Keys that go to localStorage with explicit TTL (persist across tabs)
+  const PERSISTENT_KEYS = new Set(['settings', 'branding']);
+  // Default in-session TTL for sessionStorage (very large = session lifetime)
+  const SESSION_TTL_MS  = 60 * 60 * 1000; // 60 min, effectively entire session
+
+  function _storage(key) {
+    return PERSISTENT_KEYS.has(key) ? localStorage : sessionStorage;
+  }
+
+  function _ttlMs(key, ttlMinutes) {
+    if (ttlMinutes !== undefined) return ttlMinutes * 60 * 1000;
+    return PERSISTENT_KEYS.has(key) ? 60 * 60 * 1000 : SESSION_TTL_MS;
+  }
+
+  return {
+    /**
+     * Get cached value for key. Returns null if missing or expired.
+     */
+    get(key) {
+      try {
+        const raw = _storage(key).getItem(`appcache_${key}`);
+        if (!raw) return null;
+        const entry = JSON.parse(raw);
+        if (Date.now() > entry.exp) {
+          _storage(key).removeItem(`appcache_${key}`);
+          return null;
+        }
+        return entry.data;
+      } catch (_) { return null; }
+    },
+
+    /**
+     * Store value for key.
+     * @param {string} key
+     * @param {*} data
+     * @param {number} [ttlMinutes] override TTL in minutes
+     */
+    set(key, data, ttlMinutes) {
+      try {
+        const exp = Date.now() + _ttlMs(key, ttlMinutes);
+        _storage(key).setItem(`appcache_${key}`, JSON.stringify({ exp, data }));
+      } catch (e) {
+        // Quota exceeded or private mode – silently skip caching
+        console.warn('[AppCache] Could not write cache:', e.message);
+      }
+    },
+
+    /**
+     * Remove a specific key from cache (call after mutations).
+     */
+    invalidate(key) {
+      localStorage.removeItem(`appcache_${key}`);
+      sessionStorage.removeItem(`appcache_${key}`);
+    },
+
+    /**
+     * Remove all cache keys matching a prefix.
+     * e.g. AppCache.invalidateGroup('doctors') clears 'doctors'
+     */
+    invalidateGroup(...keys) {
+      keys.forEach(k => this.invalidate(k));
+    },
+  };
+})();
+window.AppCache = AppCache;
 
 // Cloudinary image upload helper
 async function uploadImageToCloudinary(file) {

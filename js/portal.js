@@ -45,17 +45,34 @@ async function loadPortalData() {
       const nextWeek = new Date();
       nextWeek.setDate(now.getDate() + 7);
 
+      // Specialties & doctors use AppCache; slots are real-time so no cache
+      const cachedSpecs = window.AppCache?.get('specialties');
+      const cachedDocs  = window.AppCache?.get('doctors');
+
       const [specSnap, docSnap, slotSnap] = await Promise.all([
-        db.collection('specialties').where('isActive', '==', true).orderBy('displayOrder').get(),
-        db.collection('doctors').where('isActive', '==', true).get(),
+        cachedSpecs ? null : db.collection('specialties').where('isActive', '==', true).orderBy('displayOrder').get(),
+        cachedDocs  ? null : db.collection('doctors').where('isActive', '==', true).get(),
         db.collection('availableSlots')
           .where('isBooked', '==', false)
           .where('date', '>=', now.toISOString().split('T')[0])
           .where('date', '<=', nextWeek.toISOString().split('T')[0])
           .get()
       ]);
-      specSnap.forEach(d => specialties.push({ id: d.id, ...d.data() }));
-      docSnap.forEach(d => doctors.push({ id: d.id, ...d.data() }));
+
+      if (cachedSpecs) {
+        specialties = cachedSpecs;
+      } else {
+        specSnap.forEach(d => specialties.push({ id: d.id, ...d.data() }));
+        window.AppCache?.set('specialties', specialties);
+      }
+
+      if (cachedDocs) {
+        doctors = cachedDocs;
+      } else {
+        docSnap.forEach(d => doctors.push({ id: d.id, ...d.data() }));
+        window.AppCache?.set('doctors', doctors);
+      }
+
       slotSnap.forEach(d => slots.push({ id: d.id, ...d.data() }));
     } else {
       const todayStr = new Date().toISOString().split('T')[0];

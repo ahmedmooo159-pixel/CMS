@@ -161,12 +161,24 @@ async function loadSlotsMock() {
 async function loadDoctor() {
   try {
     if (window.isFirebaseConfigured) {
-      const [docSnap, specSnap] = await Promise.all([
-        db.collection('doctors').doc(doctorId).get(),
-        db.collection('specialties').doc(specialtyId).get()
-      ]);
-      if (docSnap.exists)  doctor    = { id: docSnap.id,  ...docSnap.data() };
-      if (specSnap.exists) specialty = { id: specSnap.id, ...specSnap.data() };
+      // Try to resolve from cached list first (avoids 2 reads per page visit)
+      const cachedDoctors     = window.AppCache?.get('doctors');
+      const cachedSpecialties = window.AppCache?.get('specialties');
+
+      if (cachedDoctors)     doctor    = cachedDoctors.find(d => d.id === doctorId) || null;
+      if (cachedSpecialties) specialty = cachedSpecialties.find(s => s.id === specialtyId) || null;
+
+      // Only fetch from Firestore what's still missing
+      const missing = [];
+      if (!doctor)    missing.push(db.collection('doctors').doc(doctorId).get());
+      if (!specialty) missing.push(db.collection('specialties').doc(specialtyId).get());
+
+      if (missing.length > 0) {
+        const results = await Promise.all(missing);
+        let ri = 0;
+        if (!doctor    && results[ri]) { const s = results[ri++]; if (s.exists) doctor    = { id: s.id, ...s.data() }; }
+        if (!specialty && results[ri]) { const s = results[ri++]; if (s.exists) specialty = { id: s.id, ...s.data() }; }
+      }
     } else {
       const allDocs  = JSON.parse(localStorage.getItem('mock_doctors') || '[]');
       const allSpecs = JSON.parse(localStorage.getItem('mock_specialties') || '[]');
