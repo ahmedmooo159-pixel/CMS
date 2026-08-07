@@ -79,14 +79,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // =========================================================
-// Load helpers
+// Load helpers  (all use AppCache to avoid repeated reads)
 // =========================================================
 async function loadDoctors() {
-  if (window.isFirebaseConfigured) {
+  const cached = window.AppCache?.get('doctors');
+  if (cached) {
+    allDoctors = cached;
+  } else if (window.isFirebaseConfigured) {
     const snap = await db.collection('doctors').get();
     if (snap.size > 100) console.warn('Warning: Fetched >100 docs in appointments.js from doctors without limit');
     allDoctors = [];
     snap.forEach(d => allDoctors.push({ id: d.id, ...d.data() }));
+    window.AppCache?.set('doctors', allDoctors);
   } else {
     allDoctors = JSON.parse(localStorage.getItem('mock_doctors') || '[]');
   }
@@ -97,22 +101,30 @@ async function loadDoctors() {
 }
 
 async function loadSpecialties() {
-  if (window.isFirebaseConfigured) {
+  const cached = window.AppCache?.get('specialties');
+  if (cached) {
+    allSpecialties = cached;
+  } else if (window.isFirebaseConfigured) {
     const snap = await db.collection('specialties').get();
     if (snap.size > 100) console.warn('Warning: Fetched >100 docs in appointments.js from specialties without limit');
     allSpecialties = [];
     snap.forEach(d => allSpecialties.push({ id: d.id, ...d.data() }));
+    window.AppCache?.set('specialties', allSpecialties);
   } else {
     allSpecialties = JSON.parse(localStorage.getItem('mock_specialties') || '[]');
   }
 }
 
 async function loadPatients() {
-  if (window.isFirebaseConfigured) {
+  const cached = window.AppCache?.get('patients');
+  if (cached) {
+    allPatients = cached;
+  } else if (window.isFirebaseConfigured) {
     const snap = await db.collection('patients').get();
     if (snap.size > 100) console.warn('Warning: Fetched >100 docs in appointments.js from patients without limit');
     allPatients = [];
     snap.forEach(d => allPatients.push({ id: d.id, ...d.data() }));
+    window.AppCache?.set('patients', allPatients);
   } else {
     allPatients = JSON.parse(localStorage.getItem('mock_patients') || '[]');
   }
@@ -411,7 +423,10 @@ function renderTable() {
         <td>${escHtml(doctor.name || '--')}</td>
         <td>${escHtml(specialty.name || '--')}</td>
         <td style="white-space:nowrap;">${dateFormatted}</td>
-        <td style="white-space:nowrap;">${a.appointmentTime || '--'}</td>
+        <td style="white-space:nowrap;">
+          ${a.appointmentTime || '--'}
+          ${a.consultationType === 'online' ? '<br><span class="badge badge-success" style="font-size:.65rem;padding:.2rem .4rem;margin-top:.2rem;"><i class="fa-solid fa-video"></i> أونلاين</span>' : ''}
+        </td>
         <td><span style="font-weight:700;color:var(--secondary-color);">${a.queueNumber ? `#${a.queueNumber}` : '--'}</span></td>
         <td><span class="badge ${st.cls}"><i class="fa-solid ${st.icon}"></i>${st.label}</span></td>
         <td><span class="badge ${pay.cls}">${pay.label}</span></td>
@@ -592,7 +607,7 @@ function closeDetailModal() {
 // Export CSV
 // =========================================================
 function exportCSV() {
-  const headers = ['رقم الحجز','المريض','الهاتف','الطبيب','التخصص','التاريخ','الوقت','الدور','الحالة','الدفع','السعر'];
+  const headers = ['رقم الحجز','المريض','الهاتف','الطبيب','التخصص','التاريخ','الوقت','نوع الجلسة','الدور','الحالة','الدفع','السعر'];
 
   const rows = filtered.map(a => {
     const patient   = allPatients.find(p => p.id === a.patientId)     || {};
@@ -607,6 +622,7 @@ function exportCSV() {
       specialty.name || '',
       a.appointmentDate || '',
       a.appointmentTime || '',
+      a.consultationType === 'online' ? 'أونلاين' : 'في العيادة',
       a.queueNumber || '',
       a.status || '',
       a.paymentStatus || '',
