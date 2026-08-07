@@ -745,15 +745,19 @@ async function openHistoryModal(patientId) {
     if (window.isFirebaseConfigured) {
       const snap = await db.collection('appointments')
         .where('patientId', '==', patientId)
-        .orderBy('appointmentDate', 'desc')
         .get();
       snap.forEach(d => history.push({ id: d.id, ...d.data() }));
     } else {
       const all = JSON.parse(localStorage.getItem('mock_appointments') || '[]');
-      history = all
-        .filter(a => a.patientId === patientId)
-        .sort((a, b) => (b.appointmentDate || '').localeCompare(a.appointmentDate || ''));
+      history = all.filter(a => a.patientId === patientId);
     }
+
+    // Sort client-side to avoid Firebase composite index requirement
+    history.sort((a, b) => {
+      const dateA = a.appointmentDate || '';
+      const dateB = b.appointmentDate || '';
+      return dateB.localeCompare(dateA); // Descending order
+    });
 
     if (history.length === 0) {
       body.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-muted);"><i class="fa-solid fa-folder-open" style="font-size:2.5rem;opacity:.4;"></i><p style="margin-top:1rem;">لا يوجد تاريخ مرضي مسجّل لهذا المريض.</p></div>`;

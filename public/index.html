@@ -351,6 +351,33 @@
 
       if (!onlineAppt) return;
 
+      // If Firebase is configured, fetch live status to ensure it's not stale (e.g. admin approved it)
+      if (onlineAppt.id && window.isFirebaseConfigured) {
+        db.collection('appointments').doc(onlineAppt.id).get().then(doc => {
+          if (doc.exists) {
+            const liveAppt = { id: doc.id, ...doc.data() };
+            // Update cache
+            if (sessionStorage.getItem('last_online_booking')) {
+              sessionStorage.setItem('last_online_booking', JSON.stringify(liveAppt));
+            }
+            renderBanner(liveAppt);
+          } else {
+            renderBanner(onlineAppt);
+          }
+        }).catch(() => renderBanner(onlineAppt));
+      } else {
+        renderBanner(onlineAppt);
+      }
+    }
+
+    function renderBanner(onlineAppt) {
+      const banner = document.getElementById('online-session-banner');
+      const card   = document.getElementById('online-session-card');
+      const icon   = document.getElementById('online-session-icon');
+      const title  = document.getElementById('online-session-title');
+      const desc   = document.getElementById('online-session-desc');
+      const btn    = document.getElementById('online-session-btn');
+
       banner.style.display = 'block';
 
       const isPaid = onlineAppt.paymentStatus === 'paid';

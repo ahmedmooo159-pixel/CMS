@@ -15,7 +15,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   } catch (_) {}
 
-  document.getElementById('input-phone').addEventListener('keydown', e => { if (e.key === 'Enter') searchAppointments(); });
+  const inputPhone = document.getElementById('input-phone');
+  if (inputPhone) {
+    inputPhone.addEventListener('keydown', e => { if (e.key === 'Enter') searchAppointments(); });
+  }
 });
 
 async function searchAppointments() {
@@ -180,7 +183,7 @@ async function buildApptCard(appt, isUpcoming, currentMin, todayStr) {
   
   // Logic for "Join Session"
   let joinBtnHtml = '';
-  if (isUpcoming && appt.type === 'online' && appt.status !== 'cancelled') {
+  if (isUpcoming && appt.consultationType === 'online' && appt.status !== 'cancelled') {
      let canJoin = false;
      
      if (appt.sessionStartedByDoctor === true) {
@@ -234,8 +237,8 @@ async function buildApptCard(appt, isUpcoming, currentMin, todayStr) {
         <div><div class="detail-label">الوقت</div><div class="detail-val">${appt.appointmentTime || '--'}</div></div>
       </div>
       <div class="detail-row">
-        <div class="detail-icon"><i class="fa-solid ${appt.type === 'online' ? 'fa-video' : 'fa-building'}"></i></div>
-        <div><div class="detail-label">نوع الجلسة</div><div class="detail-val">${appt.type === 'online' ? 'أونلاين' : 'في العيادة'}</div></div>
+        <div class="detail-icon"><i class="fa-solid ${appt.consultationType === 'online' ? 'fa-video' : 'fa-building'}"></i></div>
+        <div><div class="detail-label">نوع الجلسة</div><div class="detail-val">${appt.consultationType === 'online' ? 'أونلاين' : 'في العيادة'}</div></div>
       </div>
       
       ${joinBtnHtml}

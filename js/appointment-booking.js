@@ -71,7 +71,26 @@ async function startSlotsListener() {
 
         // Fallback: generate on-the-fly if no saved slots
         if (allSlots.length === 0 && doctor) {
-          allSlots = generateSlotsOnTheFly(doctor, 30);
+          const flySlots = generateSlotsOnTheFly(doctor, 30);
+          
+          // Must fetch booked slots to remove them from flySlots so they disappear from UI
+          db.collection('availableSlots')
+            .where('doctorId', '==', doctorId)
+            .where('isBooked', '==', true)
+            .get()
+            .then(bookedSnap => {
+               const bookedIds = new Set();
+               bookedSnap.forEach(d => bookedIds.add(d.id));
+               
+               allSlots = flySlots.filter(s => !bookedIds.has(s.id));
+               processAndRenderSlots();
+            })
+            .catch(err => {
+               console.error("Error fetching booked slots:", err);
+               allSlots = flySlots;
+               processAndRenderSlots();
+            });
+          return; // Wait for the async fetch to complete
         }
 
         processAndRenderSlots();
