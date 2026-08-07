@@ -22,8 +22,9 @@ try {
     console.log("Firebase initialized successfully with project: clinc-mangment-system");
 
     // Enable Firestore offline persistence (IndexedDB-based)
-    // This means repeated reads on the same data won't hit the network.
-    db.enablePersistence({ synchronizeTabs: true })
+    // On iOS Safari, synchronizeTabs causes extra delay – disable there
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    db.enablePersistence({ synchronizeTabs: !isIOS })
       .then(() => console.log('[Cache] Firestore offline persistence enabled.'))
       .catch(err => {
         if (err.code === 'failed-precondition') {

@@ -198,9 +198,10 @@ async function buildApptCard(appt, isUpcoming, currentMin, todayStr) {
      }
      
      if (canJoin) {
+        const joinRef = appt.bookingRef || appt.id;
         joinBtnHtml = `
           <div style="margin-top: 1rem;">
-             <a href="video-call.html?roomId=${appt.id}" class="btn btn-primary" style="width:100%;">
+             <a href="video-call.html?ref=${joinRef}&role=patient" class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#10b981,#059669);border-color:transparent;">
                 <i class="fa-solid fa-video"></i> الانضمام إلى الجلسة
              </a>
           </div>

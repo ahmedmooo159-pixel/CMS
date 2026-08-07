@@ -559,8 +559,20 @@ function openDetailModal(id) {
     </div>` : ''}`;
 
   // Action buttons inside modal
+  // Build WhatsApp link if patient has phone and appointment is online
+  const patientPhone = (patient.phone || '').replace(/\D/g, '');
+  const waPhone = patientPhone.startsWith('0') ? '20' + patientPhone.slice(1) : patientPhone;
+  const videoLink = `${window.location.origin}/public/video-call.html?ref=${encodeURIComponent(a.bookingRef || a.id)}&role=patient`;
+  const waMsg = encodeURIComponent(
+    `مرحباً 👋
+تم تأكيد جلستك الأونلاين بتاريخ ${a.appointmentDate || '--'} الساعة ${a.appointmentTime || '--'}.
+رابط دخول الجلسة:
+${videoLink}
+رقم الحجز: ${a.bookingRef || a.id}`
+  );
+
   document.getElementById('detail-actions').innerHTML = `
-    <button class="btn btn-secondary" onclick="closeDetailModal()">إغلاق</button>
+    <button class="btn btn-secondary" onclick="closeDetailModal()"><i class="fa-solid fa-xmark"></i> إغلاق</button>
     ${a.paymentStatus === 'pending_approval' ? `
       <button class="btn btn-primary" onclick="approveReceipt('${a.id}');" style="background:var(--success);border-color:var(--success);">
         <i class="fa-solid fa-circle-check"></i> تأكيد الدفع
@@ -570,7 +582,11 @@ function openDetailModal(id) {
       </button>` : ''}
     ${(a.consultationType === 'online' && a.status !== 'cancelled' && a.status !== 'completed') ? `
       <a href="../public/video-call.html?ref=${encodeURIComponent(a.bookingRef)}&role=doctor" target="_blank" class="btn btn-primary" style="background:linear-gradient(135deg, #10b981, #059669);border-color:transparent;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:0.4rem;">
-        <i class="fa-solid fa-video"></i> بدء الجلسة الأونلاين 🎥
+        <i class="fa-solid fa-video"></i> بدء الجلسة 🎥
+      </a>` : ''}
+    ${(a.consultationType === 'online' && waPhone.length >= 10 && a.status !== 'cancelled' && a.status !== 'completed') ? `
+      <a href="https://wa.me/${waPhone}?text=${waMsg}" target="_blank" class="btn" style="background:linear-gradient(135deg,#22c55e,#16a34a);border-color:transparent;color:#fff;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:0.4rem;">
+        <i class="fa-brands fa-whatsapp"></i> إرسال رابط الجلسة عبر واتساب
       </a>` : ''}
     ${a.status === 'pending' ? `
       <button class="btn btn-primary" onclick="updateStatus('${a.id}','confirmed');closeDetailModal();">

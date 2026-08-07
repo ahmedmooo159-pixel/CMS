@@ -45,35 +45,49 @@ async function loadPortalData() {
       const nextWeek = new Date();
       nextWeek.setDate(now.getDate() + 7);
 
-      // Specialties & doctors use AppCache; slots are real-time so no cache
+      // Specialties & doctors use AppCache; slots stat is derived to avoid heavy scan
       const cachedSpecs = window.AppCache?.get('specialties');
       const cachedDocs  = window.AppCache?.get('doctors');
+      const cachedSlotCount = window.AppCache?.get('slot_count');
 
-      const [specSnap, docSnap, slotSnap] = await Promise.all([
-        cachedSpecs ? null : db.collection('specialties').where('isActive', '==', true).orderBy('displayOrder').get(),
-        cachedDocs  ? null : db.collection('doctors').where('isActive', '==', true).get(),
-        db.collection('availableSlots')
-          .where('isBooked', '==', false)
-          .where('date', '>=', now.toISOString().split('T')[0])
-          .where('date', '<=', nextWeek.toISOString().split('T')[0])
-          .get()
-      ]);
+      const queriesToRun = [];
+      if (!cachedSpecs) queriesToRun.push(db.collection('specialties').where('isActive', '==', true).orderBy('displayOrder').get());
+      if (!cachedDocs)  queriesToRun.push(db.collection('doctors').where('isActive', '==', true).get());
+
+      const results = await Promise.all(queriesToRun);
+      let ri = 0;
 
       if (cachedSpecs) {
         specialties = cachedSpecs;
       } else {
-        specSnap.forEach(d => specialties.push({ id: d.id, ...d.data() }));
+        results[ri].forEach(d => specialties.push({ id: d.id, ...d.data() }));
         window.AppCache?.set('specialties', specialties);
+        ri++;
       }
 
       if (cachedDocs) {
         doctors = cachedDocs;
       } else {
-        docSnap.forEach(d => doctors.push({ id: d.id, ...d.data() }));
+        results[ri].forEach(d => doctors.push({ id: d.id, ...d.data() }));
         window.AppCache?.set('doctors', doctors);
       }
 
-      slotSnap.forEach(d => slots.push({ id: d.id, ...d.data() }));
+      // For slot count: use cached value or compute lightweight estimate from doctor count
+      if (cachedSlotCount !== null) {
+        slots = { length: cachedSlotCount };
+      } else {
+        // Estimate: don't run heavy query, just show doctor*slots approximation
+        // Run a lightweight limited query to get an approximate count
+        const todayStr = window.getLocalISODate();
+        const slotSnap = await db.collection('availableSlots')
+          .where('isBooked', '==', false)
+          .where('date', '>=', todayStr)
+          .limit(200)
+          .get();
+        const slotCount = slotSnap.size;
+        window.AppCache?.set('slot_count', slotCount, 5); // cache 5 minutes
+        slots = { length: slotCount };
+      }
     } else {
       const todayStr = new Date().toISOString().split('T')[0];
       const nextWeekStr = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];

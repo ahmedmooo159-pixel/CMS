@@ -1,10 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>تم تأكيد حجزك - العيادة</title>
-  <meta name="description" content="تفاصيل تأكيد موعدك في العيادة">
+  <!-- Performance: preconnect to external domains -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+
+  <title>ØªÙ… ØªØ£ÙƒÙŠØ¯ Ø­Ø¬Ø²Ùƒ - Ø§Ù„Ø¹ÙŠØ§Ø¯Ø©</title>
+  <meta name="description" content="ØªÙØ§ØµÙŠÙ„ ØªØ£ÙƒÙŠØ¯ Ù…ÙˆØ¹Ø¯Ùƒ ÙÙŠ Ø§Ù„Ø¹ÙŠØ§Ø¯Ø©">
 
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="../css/layout.css">
@@ -13,8 +18,8 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+  
+  
 
   <style>
     .portal-nav {
@@ -121,11 +126,11 @@
       <div class="portal-logo-icon" id="nav-logo-container">
         <i class="fa-solid fa-hospital"></i>
       </div>
-      <span id="clinic-name">العيادة</span>
+      <span id="clinic-name">Ø§Ù„Ø¹ÙŠØ§Ø¯Ø©</span>
     </div>
     <div style="display: flex; align-items: center; gap: 1rem;">
       <a href="index.html" class="btn btn-secondary" style="padding:.5rem 1rem;font-size:.85rem; z-index: 10;">
-        <i class="fa-solid fa-house"></i> الرئيسية
+        <i class="fa-solid fa-house"></i> Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©
       </a>
       <img src="../logo_sm.png" alt="Logo" style="max-height: 36px; width: auto; object-fit: contain; z-index: 1;">
     </div>
@@ -138,60 +143,60 @@
       <i class="fa-solid fa-circle-check"></i>
     </div>
 
-    <h1 class="conf-title">تم تأكيد حجزك! 🎉</h1>
-    <p class="conf-subtitle" id="conf-subtitle">تم حجز موعدك بنجاح. سيتواصل معك فريق العيادة قريباً.</p>
+    <h1 class="conf-title">ØªÙ… ØªØ£ÙƒÙŠØ¯ Ø­Ø¬Ø²Ùƒ! ðŸŽ‰</h1>
+    <p class="conf-subtitle" id="conf-subtitle">ØªÙ… Ø­Ø¬Ø² Ù…ÙˆØ¹Ø¯Ùƒ Ø¨Ù†Ø¬Ø§Ø­. Ø³ÙŠØªÙˆØ§ØµÙ„ Ù…Ø¹Ùƒ ÙØ±ÙŠÙ‚ Ø§Ù„Ø¹ÙŠØ§Ø¯Ø© Ù‚Ø±ÙŠØ¨Ø§Ù‹.</p>
 
     <!-- Booking Reference -->
     <div class="ref-box">
-      <div class="ref-label">رقم الحجز المرجعي</div>
+      <div class="ref-label">Ø±Ù‚Ù… Ø§Ù„Ø­Ø¬Ø² Ø§Ù„Ù…Ø±Ø¬Ø¹ÙŠ</div>
       <div class="ref-number" id="booking-ref">...</div>
-      <p style="font-size:.78rem;color:var(--text-muted);margin-top:.5rem;">احتفظ بهذا الرقم للتواصل مع العيادة</p>
+      <p style="font-size:.78rem;color:var(--text-muted);margin-top:.5rem;">Ø§Ø­ØªÙØ¸ Ø¨Ù‡Ø°Ø§ Ø§Ù„Ø±Ù‚Ù… Ù„Ù„ØªÙˆØ§ØµÙ„ Ù…Ø¹ Ø§Ù„Ø¹ÙŠØ§Ø¯Ø©</p>
     </div>
 
     <!-- Details Card -->
     <div class="card" style="margin-bottom:1.5rem;" id="booking-details-card">
       <div class="detail-row">
         <div class="detail-icon"><i class="fa-solid fa-user-doctor"></i></div>
-        <div><div class="detail-label">الطبيب</div><div class="detail-val" id="conf-doctor">--</div></div>
+        <div><div class="detail-label">Ø§Ù„Ø·Ø¨ÙŠØ¨</div><div class="detail-val" id="conf-doctor">--</div></div>
       </div>
       <div class="detail-row">
         <div class="detail-icon"><i class="fa-solid fa-briefcase-medical"></i></div>
-        <div><div class="detail-label">التخصص</div><div class="detail-val" id="conf-specialty">--</div></div>
+        <div><div class="detail-label">Ø§Ù„ØªØ®ØµØµ</div><div class="detail-val" id="conf-specialty">--</div></div>
       </div>
       <div class="detail-row">
         <div class="detail-icon"><i class="fa-solid fa-calendar-day"></i></div>
-        <div><div class="detail-label">التاريخ</div><div class="detail-val" id="conf-date">--</div></div>
+        <div><div class="detail-label">Ø§Ù„ØªØ§Ø±ÙŠØ®</div><div class="detail-val" id="conf-date">--</div></div>
       </div>
       <div class="detail-row">
         <div class="detail-icon"><i class="fa-solid fa-clock"></i></div>
-        <div><div class="detail-label">الوقت</div><div class="detail-val" id="conf-time">--</div></div>
+        <div><div class="detail-label">Ø§Ù„ÙˆÙ‚Øª</div><div class="detail-val" id="conf-time">--</div></div>
       </div>
       <div class="detail-row">
         <div class="detail-icon"><i class="fa-solid fa-user"></i></div>
-        <div><div class="detail-label">المريض</div><div class="detail-val" id="conf-patient">--</div></div>
+        <div><div class="detail-label">Ø§Ù„Ù…Ø±ÙŠØ¶</div><div class="detail-val" id="conf-patient">--</div></div>
       </div>
       <div class="detail-row">
         <div class="detail-icon"><i class="fa-solid fa-phone"></i></div>
-        <div><div class="detail-label">رقم الهاتف</div><div class="detail-val" id="conf-phone">--</div></div>
+        <div><div class="detail-label">Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ</div><div class="detail-val" id="conf-phone">--</div></div>
       </div>
       <div class="detail-row">
         <div class="detail-icon"><i class="fa-solid fa-coins"></i></div>
         <div>
-          <div class="detail-label">سعر الكشف</div>
+          <div class="detail-label">Ø³Ø¹Ø± Ø§Ù„ÙƒØ´Ù</div>
           <div class="detail-val" id="conf-price">--</div>
         </div>
       </div>
       <div class="detail-row">
         <div class="detail-icon"><i class="fa-solid fa-arrow-down-1-9"></i></div>
         <div>
-          <div class="detail-label">رقمك في الدور</div>
+          <div class="detail-label">Ø±Ù‚Ù…Ùƒ ÙÙŠ Ø§Ù„Ø¯ÙˆØ±</div>
           <div class="detail-val" id="conf-queue" style="color:var(--success); font-weight: 700;">--</div>
         </div>
       </div>
       <div class="detail-row">
         <div class="detail-icon"><i class="fa-solid fa-credit-card"></i></div>
         <div>
-          <div class="detail-label">حالة الدفع</div>
+          <div class="detail-label">Ø­Ø§Ù„Ø© Ø§Ù„Ø¯ÙØ¹</div>
           <div class="detail-val" id="conf-payment-status">--</div>
         </div>
       </div>
@@ -200,28 +205,28 @@
     <!-- Important notice -->
     <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:1rem;margin-bottom:1.75rem;font-size:.88rem;color:var(--text-primary);">
       <i class="fa-solid fa-circle-exclamation" style="color:var(--warning);margin-left:.4rem;"></i>
-      <strong>تذكير:</strong> يرجى الحضور قبل موعدك بـ 10 دقائق على الأقل وإحضار هذا الرقم المرجعي.
+      <strong>ØªØ°ÙƒÙŠØ±:</strong> ÙŠØ±Ø¬Ù‰ Ø§Ù„Ø­Ø¶ÙˆØ± Ù‚Ø¨Ù„ Ù…ÙˆØ¹Ø¯Ùƒ Ø¨Ù€ 10 Ø¯Ù‚Ø§Ø¦Ù‚ Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„ ÙˆØ¥Ø­Ø¶Ø§Ø± Ù‡Ø°Ø§ Ø§Ù„Ø±Ù‚Ù… Ø§Ù„Ù…Ø±Ø¬Ø¹ÙŠ.
     </div>
 
     <!-- Actions -->
     <div style="margin-bottom:1rem;" class="no-print">
       <a href="queue-radar.html" id="queue-radar-btn" class="btn btn-primary" style="background: linear-gradient(135deg, #0284c7, #0d9488); border: none; font-weight: 800; padding: 0.9rem 1.5rem; font-size: 1rem; width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.6rem; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);">
-        <i class="fa-solid fa-satellite-dish"></i> 📡 رادار الانتظار الحي (تتبع دورك لحظياً)
+        <i class="fa-solid fa-satellite-dish"></i> ðŸ“¡ Ø±Ø§Ø¯Ø§Ø± Ø§Ù„Ø§Ù†ØªØ¸Ø§Ø± Ø§Ù„Ø­ÙŠ (ØªØªØ¨Ø¹ Ø¯ÙˆØ±Ùƒ Ù„Ø­Ø¸ÙŠØ§Ù‹)
       </a>
     </div>
 
     <div class="action-btns no-print">
       <button onclick="window.print()" class="btn btn-secondary">
-        <i class="fa-solid fa-print"></i> طباعة الإيصال
+        <i class="fa-solid fa-print"></i> Ø·Ø¨Ø§Ø¹Ø© Ø§Ù„Ø¥ÙŠØµØ§Ù„
       </button>
       <a href="index.html" class="btn btn-primary">
-        <i class="fa-solid fa-house"></i> العودة للرئيسية
+        <i class="fa-solid fa-house"></i> Ø§Ù„Ø¹ÙˆØ¯Ø© Ù„Ù„Ø±Ø¦ÙŠØ³ÙŠØ©
       </a>
       <a href="index.html" class="btn btn-secondary" id="new-booking-btn">
-        <i class="fa-solid fa-plus"></i> حجز موعد آخر
+        <i class="fa-solid fa-plus"></i> Ø­Ø¬Ø² Ù…ÙˆØ¹Ø¯ Ø¢Ø®Ø±
       </a>
       <a id="cancel-booking-link" href="cancel-booking.html" class="btn btn-danger" style="background:transparent;border-color:rgba(239,68,68,.4);color:var(--danger);">
-        <i class="fa-solid fa-ban"></i> إلغاء الحجز
+        <i class="fa-solid fa-ban"></i> Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø­Ø¬Ø²
       </a>
     </div>
 
@@ -232,7 +237,7 @@
   <script src="../js/theme.js"></script>
   <script src="../js/confirmation.js"></script>
   <footer style="margin-top: 3rem; padding: 1.5rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); max-width: 1100px; margin-left: auto; margin-right: auto;">
-      <div>© 2026.  جميع الحقوق محفوظة. أحمد مراد</div>
+      <div>Â© 2026.  Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ‚ Ù…Ø­ÙÙˆØ¸Ø©. Ø£Ø­Ù…Ø¯ Ù…Ø±Ø§Ø¯</div>
     <img src="../logo_sm.png" alt="Logo" style="max-height: 32px; width: auto; object-fit: contain;">
   </footer>
 </body>
