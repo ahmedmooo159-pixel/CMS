@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 
-  <title>ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø­Ø¬Ø² - Ø§Ù„Ø¹ÙŠØ§Ø¯Ø©</title>
-  <meta name="description" content="Ø£Ø¯Ø®Ù„ Ø¨ÙŠØ§Ù†Ø§ØªÙƒ Ø§Ù„Ø´Ø®ØµÙŠØ© Ù„Ø¥ØªÙ…Ø§Ù… Ø­Ø¬Ø² Ù…ÙˆØ¹Ø¯Ùƒ">
+  <title>تفاصيل الحجز - العيادة</title>
+  <meta name="description" content="أدخل بياناتك الشخصية لإتمام حجز موعدك">
 
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="../css/layout.css">
@@ -143,11 +143,11 @@
       <div class="portal-logo-icon" id="nav-logo-container">
         <i class="fa-solid fa-hospital"></i>
       </div>
-      <span id="clinic-name">Ø§Ù„Ø¹ÙŠØ§Ø¯Ø©</span>
+      <span id="clinic-name">العيادة</span>
     </div>
     <div style="display: flex; align-items: center; gap: 1rem;">
       <a id="back-btn" href="index.html" class="btn btn-secondary" style="padding:.5rem 1rem;font-size:.85rem; z-index: 10;">
-        <i class="fa-solid fa-arrow-right"></i> Ø§Ù„Ø±Ø¬ÙˆØ¹
+        <i class="fa-solid fa-arrow-right"></i> الرجوع
       </a>
       <img src="../logo_sm.png" alt="Logo" style="max-height: 36px; width: auto; object-fit: contain; z-index: 1;">
     </div>
@@ -156,22 +156,22 @@
   <div style="max-width:1000px;margin:0 auto;padding:2rem 1.5rem .5rem;">
     <!-- Breadcrumb -->
     <div class="breadcrumb">
-      <a href="index.html">Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©</a>
+      <a href="index.html">الرئيسية</a>
       <i class="fa-solid fa-chevron-left"></i>
-      <a id="bc-doctors-link" href="#">Ø§Ù„Ø£Ø·Ø¨Ø§Ø¡</a>
+      <a id="bc-doctors-link" href="#">الأطباء</a>
       <i class="fa-solid fa-chevron-left"></i>
-      <span>ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø­Ø¬Ø²</span>
+      <span>تفاصيل الحجز</span>
     </div>
 
     <!-- Steps -->
     <div class="booking-steps">
-      <div class="step done"><div class="step-num"><i class="fa-solid fa-check"></i></div> Ø§Ù„ØªØ®ØµØµ ÙˆØ§Ù„Ø·Ø¨ÙŠØ¨</div>
+      <div class="step done"><div class="step-num"><i class="fa-solid fa-check"></i></div> التخصص والطبيب</div>
       <div class="step-sep"></div>
-      <div class="step done"><div class="step-num"><i class="fa-solid fa-check"></i></div> Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„Ù…ÙˆØ¹Ø¯</div>
+      <div class="step done"><div class="step-num"><i class="fa-solid fa-check"></i></div> اختيار الموعد</div>
       <div class="step-sep"></div>
-      <div class="step active"><div class="step-num">3</div> Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø­Ø¬Ø²</div>
+      <div class="step active"><div class="step-num">3</div> بيانات الحجز</div>
       <div class="step-sep"></div>
-      <div class="step"><div class="step-num">4</div> Ø§Ù„ØªØ£ÙƒÙŠØ¯</div>
+      <div class="step"><div class="step-num">4</div> التأكيد</div>
     </div>
   </div>
 
@@ -188,22 +188,22 @@
         <!-- Personal Info -->
         <div class="card flex flex-col gap-4" style="margin-bottom:1.25rem;">
           <h3 style="font-family:var(--font-display);font-size:1.1rem;border-bottom:1px solid var(--border-color);padding-bottom:.75rem;">
-            <i class="fa-solid fa-user" style="color:var(--primary-color);margin-left:.5rem;"></i> Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø´Ø®ØµÙŠØ©
+            <i class="fa-solid fa-user" style="color:var(--primary-color);margin-left:.5rem;"></i> البيانات الشخصية
           </h3>
 
           <div class="grid grid-cols-2 md-grid-cols-1 gap-4">
             <div class="form-group" style="grid-column: auto;">
-              <label for="patientFirstName" class="form-label">Ø§Ù„Ø§Ø³Ù… Ø§Ù„Ø£ÙˆÙ„ <span style="color:var(--danger)">*</span></label>
-              <input type="text" id="patientFirstName" class="form-input" placeholder="Ù…Ø­Ù…Ø¯" required>
+              <label for="patientFirstName" class="form-label">الاسم الأول <span style="color:var(--danger)">*</span></label>
+              <input type="text" id="patientFirstName" class="form-input" placeholder="محمد" required>
             </div>
             <div class="form-group" style="grid-column: auto;">
-              <label for="patientLastName" class="form-label">Ø§Ø³Ù… Ø§Ù„Ø¹Ø§Ø¦Ù„Ø© <span style="color:var(--danger)">*</span></label>
-              <input type="text" id="patientLastName" class="form-input" placeholder="Ø£Ø­Ù…Ø¯" required>
+              <label for="patientLastName" class="form-label">اسم العائلة <span style="color:var(--danger)">*</span></label>
+              <input type="text" id="patientLastName" class="form-input" placeholder="أحمد" required>
             </div>
           </div>
 
           <div class="form-group">
-            <label for="patientPhone" class="form-label">Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ <span style="color:var(--danger)">*</span></label>
+            <label for="patientPhone" class="form-label">رقم الهاتف <span style="color:var(--danger)">*</span></label>
             <input type="tel" id="patientPhone" class="form-input" placeholder="01012345678" required>
           </div>
         </div>
@@ -211,7 +211,7 @@
         <!-- Payment Method -->
         <div class="card flex flex-col gap-4">
           <h3 style="font-family:var(--font-display);font-size:1.1rem;border-bottom:1px solid var(--border-color);padding-bottom:.75rem;">
-            <i class="fa-solid fa-credit-card" style="color:var(--secondary-color);margin-left:.5rem;"></i> Ø·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø¯ÙØ¹
+            <i class="fa-solid fa-credit-card" style="color:var(--secondary-color);margin-left:.5rem;"></i> طريقة الدفع
           </h3>
 
           <div class="payment-methods">
@@ -222,8 +222,8 @@
                 <i class="fa-solid fa-mobile-screen-button"></i>
               </div>
               <div class="payment-method-details">
-                <div class="pm-name">ÙÙˆØ¯Ø§ÙÙˆÙ† ÙƒØ§Ø´</div>
-                <div class="pm-desc">Ø­ÙˆÙ‘Ù„ ÙˆØ§Ø±ÙØ¹ ØµÙˆØ±Ø© Ø¥ÙŠØµØ§Ù„ Ø§Ù„ØªØ­ÙˆÙŠÙ„</div>
+                <div class="pm-name">فودافون كاش</div>
+                <div class="pm-desc">حوّل وارفع صورة إيصال التحويل</div>
               </div>
               <div class="payment-check"><i class="fa-solid fa-check"></i></div>
             </label>
@@ -236,7 +236,7 @@
               </div>
               <div class="payment-method-details">
                 <div class="pm-name">InstaPay</div>
-                <div class="pm-desc">Ø­ÙˆÙ‘Ù„ Ø¹Ø¨Ø± ØªØ·Ø¨ÙŠÙ‚ InstaPay ÙˆØ§Ø±ÙØ¹ Ø¥ÙŠØµØ§Ù„ Ø§Ù„ØªØ­ÙˆÙŠÙ„</div>
+                <div class="pm-desc">حوّل عبر تطبيق InstaPay وارفع إيصال التحويل</div>
               </div>
               <div class="payment-check"><i class="fa-solid fa-check"></i></div>
             </label>
@@ -248,8 +248,8 @@
                 <i class="fa-solid fa-credit-card"></i>
               </div>
               <div class="payment-method-details">
-                <div class="pm-name">Ø§Ù„Ø¯ÙØ¹ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ</div>
-                <div class="pm-desc">Ø¨Ø·Ø§Ù‚Ø© Ø¨Ù†ÙƒÙŠØ© Ø£Ùˆ Ù…Ø­ÙØ¸Ø© Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠØ© Ø¹Ø¨Ø± Paymob</div>
+                <div class="pm-name">الدفع الإلكتروني</div>
+                <div class="pm-desc">بطاقة بنكية أو محفظة إلكترونية عبر Paymob</div>
               </div>
               <div class="payment-check"><i class="fa-solid fa-check"></i></div>
             </label>
@@ -261,8 +261,8 @@
                 <i class="fa-solid fa-money-bill-wave"></i>
               </div>
               <div class="payment-method-details">
-                <div class="pm-name">Ø§Ù„Ø¯ÙØ¹ Ø¹Ù†Ø¯ Ø§Ù„Ø­Ø¶ÙˆØ±</div>
-                <div class="pm-desc">Ø§Ø¯ÙØ¹ Ù†Ù‚Ø¯Ø§Ù‹ ÙÙŠ Ø§Ù„Ø¹ÙŠØ§Ø¯Ø© ÙŠÙˆÙ… Ù…ÙˆØ¹Ø¯Ùƒ</div>
+                <div class="pm-name">الدفع عند الحضور</div>
+                <div class="pm-desc">ادفع نقداً في العيادة يوم موعدك</div>
               </div>
               <div class="payment-check"><i class="fa-solid fa-check"></i></div>
             </label>
@@ -275,42 +275,42 @@
                 <i id="transfer-icon" class="fa-solid fa-mobile-screen-button"></i>
               </div>
               <div>
-                <div id="transfer-title" style="font-weight:700;font-size:.95rem;">ØªØ­ÙˆÙŠÙ„ Ø¹Ø¨Ø± ÙÙˆØ¯Ø§ÙÙˆÙ† ÙƒØ§Ø´</div>
-                <div style="font-size:.8rem;color:var(--text-muted);"> Ø­ÙˆÙ‘Ù„ Ø§Ù„Ù…Ø¨Ù„Øº ÙˆØ§Ø±ÙØ¹ ØµÙˆØ±Ø© Ø§Ù„Ø¥ÙŠØµØ§Ù„</div>
+                <div id="transfer-title" style="font-weight:700;font-size:.95rem;">تحويل عبر فودافون كاش</div>
+                <div style="font-size:.8rem;color:var(--text-muted);"> حوّل المبلغ وارفع صورة الإيصال</div>
               </div>
             </div>
             <div style="display:flex;gap:.75rem;align-items:center;background:var(--bg-input);padding:.65rem 1rem;border-radius:8px;border:1px solid var(--border-color);margin-bottom:.75rem;">
               <i id="transfer-method-icon" class="fa-solid fa-phone" style="color:#dc2626;"></i>
               <div>
-                <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.15rem;" id="transfer-label">Ø±Ù‚Ù… ÙÙˆØ¯Ø§ÙÙˆÙ† ÙƒØ§Ø´</div>
+                <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.15rem;" id="transfer-label">رقم فودافون كاش</div>
                 <div style="font-family:monospace;font-weight:700;font-size:1.1rem;letter-spacing:.05em;color:var(--text-primary);" id="transfer-number">01XXXXXXXXXX</div>
               </div>
               <button type="button" onclick="copyTransferNumber()" style="margin-right:auto;background:none;border:1px solid var(--border-color);border-radius:6px;padding:.35rem .6rem;font-size:.78rem;cursor:pointer;color:var(--text-muted);">
-                <i class="fa-solid fa-copy"></i> Ù†Ø³Ø®
+                <i class="fa-solid fa-copy"></i> نسخ
               </button>
             </div>
-            <div style="font-size:.82rem;color:var(--text-muted);margin-bottom:.75rem;">Ø¨Ø¹Ø¯ Ø§Ù„ØªØ­ÙˆÙŠÙ„ØŒ Ø§Ø±ÙØ¹ ØµÙˆØ±Ø© Ø¥ÙŠØµØ§Ù„ Ø§Ù„ØªØ­ÙˆÙŠÙ„ (Screenshot) Ù„ØªØ£ÙƒÙŠØ¯ Ø­Ø¬Ø²Ùƒ:</div>
+            <div style="font-size:.82rem;color:var(--text-muted);margin-bottom:.75rem;">بعد التحويل، ارفع صورة إيصال التحويل (Screenshot) لتأكيد حجزك:</div>
 
             <!-- Receipt Upload Area -->
             <label for="receipt-upload" id="receipt-upload-label" style="display:flex;flex-direction:column;align-items:center;gap:.6rem;padding:1rem;border:2px dashed rgba(220,38,38,.3);border-radius:10px;cursor:pointer;transition:all .2s;text-align:center;background:rgba(220,38,38,.03);">
               <i class="fa-solid fa-cloud-arrow-up" style="font-size:1.6rem;color:#dc2626;"></i>
-              <span style="font-size:.85rem;font-weight:600;color:var(--text-primary);"â€¯>Ø§Ø¶ØºØ· Ù„Ø±ÙØ¹ ØµÙˆØ±Ø© Ø§Ù„Ø¥ÙŠØµØ§Ù„</span>
-              <span style="font-size:.75rem;color:var(--text-muted);">PNG, JPG, JPEG - Ø¨Ø­Ø¬Ù… Ø£Ù‚ØµÙ‰ 5MB</span>
+              <span style="font-size:.85rem;font-weight:600;color:var(--text-primary);" >اضغط لرفع صورة الإيصال</span>
+              <span style="font-size:.75rem;color:var(--text-muted);">PNG, JPG, JPEG - بحجم أقصى 5MB</span>
             </label>
             <input type="file" id="receipt-upload" accept="image/*" style="display:none;" onchange="handleReceiptUpload(event)">
 
             <!-- Preview of uploaded receipt -->
             <div id="receipt-preview" style="display:none;margin-top:.75rem;">
-              <img id="receipt-img-preview" src="" alt="Ø¥ÙŠØµØ§Ù„ Ø§Ù„ØªØ­ÙˆÙŠÙ„" style="width:100%;max-height:220px;object-fit:contain;border-radius:8px;border:1px solid var(--border-color);">
+              <img id="receipt-img-preview" src="" alt="إيصال التحويل" style="width:100%;max-height:220px;object-fit:contain;border-radius:8px;border:1px solid var(--border-color);">
               <button type="button" onclick="clearReceipt()" style="display:flex;align-items:center;gap:.35rem;margin-top:.4rem;font-size:.8rem;color:var(--danger);background:none;border:none;cursor:pointer;padding:0;">
-                <i class="fa-solid fa-xmark"></i> Ø­Ø°Ù Ø§Ù„ØµÙˆØ±Ø©
+                <i class="fa-solid fa-xmark"></i> حذف الصورة
               </button>
             </div>
           </div>
 
           <!-- Paymob iframe container (hidden unless online selected) -->
           <div id="paymob-container" style="display:none;border-radius:12px;overflow:hidden;border:1px solid var(--border-color);">
-            <iframe id="paymob-iframe" style="width:100%;height:500px;border:none;" title="Ø¨ÙˆØ§Ø¨Ø© Ø§Ù„Ø¯ÙØ¹"></iframe>
+            <iframe id="paymob-iframe" style="width:100%;height:500px;border:none;" title="بوابة الدفع"></iframe>
           </div>
         </div>
 
@@ -320,39 +320,39 @@
     <!-- Summary Sidebar -->
     <div class="booking-sidebar">
       <div class="summary-card">
-        <div class="summary-title"><i class="fa-solid fa-receipt" style="margin-left:.4rem;color:var(--primary-color);"></i> Ù…Ù„Ø®Øµ Ø§Ù„Ø­Ø¬Ø²</div>
+        <div class="summary-title"><i class="fa-solid fa-receipt" style="margin-left:.4rem;color:var(--primary-color);"></i> ملخص الحجز</div>
 
         <div>
           <div class="summary-row">
-            <span class="summary-label">Ø§Ù„Ø·Ø¨ÙŠØ¨</span>
+            <span class="summary-label">الطبيب</span>
             <span class="summary-val" id="sum-doctor">--</span>
           </div>
           <div class="summary-row">
-            <span class="summary-label">Ø§Ù„ØªØ®ØµØµ</span>
+            <span class="summary-label">التخصص</span>
             <span class="summary-val" id="sum-specialty">--</span>
           </div>
           <div class="summary-row">
-            <span class="summary-label">Ø§Ù„ØªØ§Ø±ÙŠØ®</span>
+            <span class="summary-label">التاريخ</span>
             <span class="summary-val" id="sum-date">--</span>
           </div>
           <div class="summary-row">
-            <span class="summary-label">Ø§Ù„ÙˆÙ‚Øª</span>
+            <span class="summary-label">الوقت</span>
             <span class="summary-val" id="sum-time">--</span>
           </div>
         </div>
 
         <div class="summary-total">
-          <span style="font-weight:700;">Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ</span>
-          <span class="summary-val" id="sum-price">-- Ø¬.Ù…</span>
+          <span style="font-weight:700;">الإجمالي</span>
+          <span class="summary-val" id="sum-price">-- ج.م</span>
         </div>
 
         <button id="confirm-booking-btn" class="submit-btn" type="button" onclick="submitBooking()">
-          <i class="fa-solid fa-calendar-check"></i> ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø­Ø¬Ø²
+          <i class="fa-solid fa-calendar-check"></i> تأكيد الحجز
         </button>
 
         <p style="text-align:center;font-size:.78rem;color:var(--text-muted);">
           <i class="fa-solid fa-shield-halved" style="color:var(--success);"></i>
-          Ø¨ÙŠØ§Ù†Ø§ØªÙƒ Ù…Ø­Ù…ÙŠØ© ÙˆØ¢Ù…Ù†Ø© ØªÙ…Ø§Ù…Ø§Ù‹
+          بياناتك محمية وآمنة تماماً
         </p>
       </div>
     </div>
@@ -365,7 +365,7 @@
   <script src="../js/booking.js"></script>
   <script src="../js/paymob.js"></script>
   <footer style="margin-top: 3rem; padding: 1.5rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); max-width: 1100px; margin-left: auto; margin-right: auto;">
-    <div>Â© 2026.  Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ‚ Ù…Ø­ÙÙˆØ¸Ø©. Ø£Ø­Ù…Ø¯ Ù…Ø±Ø§Ø¯</div>
+    <div>© 2026.  جميع الحقوق محفوظة. أحمد مراد</div>
     <img src="../logo_sm.png" alt="Logo" style="max-height: 32px; width: auto; object-fit: contain;">
   </footer>
 </body>

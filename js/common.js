@@ -7,7 +7,7 @@
 // Firebase Configuration
 const firebaseConfig = window.ENV && window.ENV.FIREBASE_CONFIG ? window.ENV.FIREBASE_CONFIG : {};
 
- let db, auth;
+let db, auth, storage;
 let isFirebaseConfigured = false;
 
 const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && window.location.protocol !== 'file:';
@@ -16,23 +16,38 @@ const isProduction = window.location.hostname !== 'localhost' && window.location
 try {
   if (firebaseConfig.apiKey && firebaseConfig.apiKey.startsWith("AIza")) {
     firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore();
-    auth = firebase.auth();
+    
+    // Safely check if firestore service is available
+    if (typeof firebase.firestore === 'function') {
+      db = firebase.firestore();
+      
+      // Enable Firestore offline persistence (IndexedDB-based) safely
+      if (typeof db.enablePersistence === 'function') {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        db.enablePersistence({ synchronizeTabs: !isIOS })
+          .then(() => console.log('[Cache] Firestore offline persistence enabled.'))
+          .catch(err => {
+            if (err.code === 'failed-precondition') {
+              console.warn('[Cache] Persistence: multiple tabs open, falling back to memory.');
+            } else if (err.code === 'unimplemented') {
+              console.warn('[Cache] Persistence: browser does not support IndexedDB.');
+            }
+          });
+      }
+    }
+    
+    // Safely check if auth service is available
+    if (typeof firebase.auth === 'function') {
+      auth = firebase.auth();
+    }
+    
+    // Safely check if storage service is available
+    if (typeof firebase.storage === 'function') {
+      storage = firebase.storage();
+    }
+    
     isFirebaseConfigured = true;
     console.log("Firebase initialized successfully with project: clinc-mangment-system");
-
-    // Enable Firestore offline persistence (IndexedDB-based)
-    // On iOS Safari, synchronizeTabs causes extra delay – disable there
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    db.enablePersistence({ synchronizeTabs: !isIOS })
-      .then(() => console.log('[Cache] Firestore offline persistence enabled.'))
-      .catch(err => {
-        if (err.code === 'failed-precondition') {
-          console.warn('[Cache] Persistence: multiple tabs open, falling back to memory.');
-        } else if (err.code === 'unimplemented') {
-          console.warn('[Cache] Persistence: browser does not support IndexedDB.');
-        }
-      });
   } else {
     if (isProduction) {
       alert("Critical Error: Firebase is not configured in a production environment.");
@@ -97,11 +112,12 @@ function setupMockFirebase() {
     }
   };
 
-  // storage = {
-  //   ref: () => ({
-  //     put: () => Promise.resolve({ ref: { getDownloadURL: () => Promise.resolve("https://placehold.co/150") } })
-  //   })
-  // };
+  storage = {
+    ref: () => ({
+      put: () => Promise.resolve(),
+      getDownloadURL: () => Promise.resolve("https://placehold.co/150")
+    })
+  };
 }
 
 // Base Path helper for GitHub Pages compatibility
@@ -143,6 +159,7 @@ window.isValidImageUrl = isValidImageUrl;
 // Export global tools to window object
 window.db                  = db;
 window.auth                = auth;
+window.storage             = storage;
 window.isFirebaseConfigured = isFirebaseConfigured;
 window.requireAdmin        = requireAdmin;
 

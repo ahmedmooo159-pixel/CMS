@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 
-  <title>Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø­Ø¬Ø² - Ø§Ù„Ø¹ÙŠØ§Ø¯Ø©</title>
-  <meta name="description" content="Ø¥Ù„ØºØ§Ø¡ Ù…ÙˆØ¹Ø¯Ùƒ ÙÙŠ Ø§Ù„Ø¹ÙŠØ§Ø¯Ø© Ø¨Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø±Ù‚Ù… Ø§Ù„Ø­Ø¬Ø² ÙˆØ±Ù‚Ù… Ù‡Ø§ØªÙÙƒ">
+  <title>إلغاء الحجز - العيادة</title>
+  <meta name="description" content="إلغاء موعدك في العيادة باستخدام رقم الحجز ورقم هاتفك">
 
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="../css/layout.css">
@@ -112,10 +112,10 @@
   <nav class="portal-nav">
     <a href="index.html" class="portal-logo">
       <div class="portal-logo-icon"><i class="fa-solid fa-hospital"></i></div>
-      <span id="clinic-name">Ø§Ù„Ø¹ÙŠØ§Ø¯Ø©</span>
+      <span id="clinic-name">العيادة</span>
     </a>
     <a href="index.html" class="btn btn-secondary" style="font-size:.85rem;padding:.5rem 1rem;">
-      <i class="fa-solid fa-house"></i> Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©
+      <i class="fa-solid fa-house"></i> الرئيسية
     </a>
   </nav>
 
@@ -125,8 +125,8 @@
     <div class="page-icon">
       <i class="fa-solid fa-calendar-xmark"></i>
     </div>
-    <h1 class="page-title">Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø­Ø¬Ø²</h1>
-    <p class="page-subtitle">Ø£Ø¯Ø®Ù„ Ø±Ù‚Ù… Ø­Ø¬Ø²Ùƒ ÙˆØ±Ù‚Ù… Ù‡Ø§ØªÙÙƒ Ù„Ù„Ø¨Ø­Ø« Ø¹Ù† Ù…ÙˆØ¹Ø¯Ùƒ ÙˆØ¥Ù„ØºØ§Ø¦Ù‡.</p>
+    <h1 class="page-title">إلغاء الحجز</h1>
+    <p class="page-subtitle">أدخل رقم حجزك ورقم هاتفك للبحث عن موعدك وإلغائه.</p>
 
     <!-- Status Bar -->
     <div id="page-status" class="status-bar"></div>
@@ -136,21 +136,21 @@
       <div class="form-group">
         <label class="form-label" for="input-ref">
           <i class="fa-solid fa-hashtag" style="color:var(--primary-color);margin-left:.3rem;"></i>
-          Ø±Ù‚Ù… Ø§Ù„Ø­Ø¬Ø² Ø§Ù„Ù…Ø±Ø¬Ø¹ÙŠ
+          رقم الحجز المرجعي
         </label>
         <input type="text" id="input-ref" class="form-input"
-               placeholder="Ù…Ø«Ø§Ù„: BK-A1B2C3"
+               placeholder="مثال: BK-A1B2C3"
                style="font-family:monospace;font-size:1.05rem;letter-spacing:.08em;">
       </div>
       <div class="form-group">
         <label class="form-label" for="input-phone">
           <i class="fa-solid fa-phone" style="color:var(--primary-color);margin-left:.3rem;"></i>
-          Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ Ø§Ù„Ù…Ø³Ø¬Ù‘Ù„
+          رقم الهاتف المسجّل
         </label>
         <input type="tel" id="input-phone" class="form-input" placeholder="01xxxxxxxxx">
       </div>
       <button id="search-btn" class="btn btn-primary" style="width:100%;" onclick="searchAppointment()">
-        <i class="fa-solid fa-magnifying-glass"></i> Ø§Ù„Ø¨Ø­Ø« Ø¹Ù† Ø§Ù„Ø­Ø¬Ø²
+        <i class="fa-solid fa-magnifying-glass"></i> البحث عن الحجز
       </button>
     </div>
 
@@ -158,40 +158,40 @@
     <div class="card result-card" id="result-card">
       <h3 style="font-family:var(--font-display);font-size:1.1rem;margin-bottom:1rem;border-bottom:1px solid var(--border-color);padding-bottom:.75rem;">
         <i class="fa-solid fa-calendar-check" style="color:var(--primary-color);margin-left:.5rem;"></i>
-        ØªÙØ§ØµÙŠÙ„ Ø­Ø¬Ø²Ùƒ
+        تفاصيل حجزك
       </h3>
 
       <div class="detail-row">
         <div class="detail-icon"><i class="fa-solid fa-hashtag"></i></div>
-        <div><div class="detail-label">Ø±Ù‚Ù… Ø§Ù„Ø­Ø¬Ø²</div><div class="detail-val" id="res-ref" style="font-family:monospace;">--</div></div>
+        <div><div class="detail-label">رقم الحجز</div><div class="detail-val" id="res-ref" style="font-family:monospace;">--</div></div>
       </div>
       <div class="detail-row">
         <div class="detail-icon"><i class="fa-solid fa-user-doctor"></i></div>
-        <div><div class="detail-label">Ø§Ù„Ø·Ø¨ÙŠØ¨</div><div class="detail-val" id="res-doctor">--</div></div>
+        <div><div class="detail-label">الطبيب</div><div class="detail-val" id="res-doctor">--</div></div>
       </div>
       <div class="detail-row">
         <div class="detail-icon"><i class="fa-solid fa-calendar-day"></i></div>
-        <div><div class="detail-label">Ø§Ù„ØªØ§Ø±ÙŠØ®</div><div class="detail-val" id="res-date">--</div></div>
+        <div><div class="detail-label">التاريخ</div><div class="detail-val" id="res-date">--</div></div>
       </div>
       <div class="detail-row">
         <div class="detail-icon"><i class="fa-solid fa-clock"></i></div>
-        <div><div class="detail-label">Ø§Ù„ÙˆÙ‚Øª</div><div class="detail-val" id="res-time">--</div></div>
+        <div><div class="detail-label">الوقت</div><div class="detail-val" id="res-time">--</div></div>
       </div>
       <div class="detail-row">
         <div class="detail-icon"><i class="fa-solid fa-circle-info"></i></div>
-        <div><div class="detail-label">Ø§Ù„Ø­Ø§Ù„Ø©</div><div class="detail-val" id="res-status">--</div></div>
+        <div><div class="detail-label">الحالة</div><div class="detail-val" id="res-status">--</div></div>
       </div>
 
       <!-- Confirm Cancel Box (hidden until user clicks cancel) -->
       <div class="confirm-cancel-box" id="confirm-cancel-box">
         <i class="fa-solid fa-triangle-exclamation" style="font-size:2rem;color:var(--warning);margin-bottom:.75rem;"></i>
-        <p>Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ Ù…Ù† Ø¥Ù„ØºØ§Ø¡ Ù‡Ø°Ø§ Ø§Ù„Ø­Ø¬Ø²ØŸ<br>Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø§Ù„ØªØ±Ø§Ø¬Ø¹ Ø¹Ù† Ù‡Ø°Ø§ Ø§Ù„Ø¥Ø¬Ø±Ø§Ø¡.</p>
+        <p>هل أنت متأكد من إلغاء هذا الحجز؟<br>لا يمكن التراجع عن هذا الإجراء.</p>
         <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
           <button class="btn btn-secondary" onclick="hideConfirmBox()">
-            <i class="fa-solid fa-arrow-right"></i> ØªØ±Ø§Ø¬Ø¹
+            <i class="fa-solid fa-arrow-right"></i> تراجع
           </button>
           <button class="btn btn-danger" id="confirm-cancel-btn" onclick="confirmCancel()">
-            <i class="fa-solid fa-ban"></i> Ù†Ø¹Ù…ØŒ Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø­Ø¬Ø²
+            <i class="fa-solid fa-ban"></i> نعم، إلغاء الحجز
           </button>
         </div>
       </div>
@@ -199,10 +199,10 @@
       <!-- Cancel Button -->
       <div id="cancel-btn-wrap" style="margin-top:1.25rem;display:flex;gap:.75rem;flex-wrap:wrap;">
         <button class="btn btn-secondary" onclick="resetForm()" style="flex:1;">
-          <i class="fa-solid fa-rotate-left"></i> Ø¨Ø­Ø« Ø¬Ø¯ÙŠØ¯
+          <i class="fa-solid fa-rotate-left"></i> بحث جديد
         </button>
         <button class="btn btn-danger" id="cancel-appt-btn" onclick="showConfirmBox()" style="flex:1;">
-          <i class="fa-solid fa-ban"></i> Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø­Ø¬Ø²
+          <i class="fa-solid fa-ban"></i> إلغاء الحجز
         </button>
       </div>
     </div>
@@ -210,16 +210,16 @@
     <!-- Cancelled Success State -->
     <div class="card cancelled-state" id="cancelled-state">
       <div class="cancelled-icon"><i class="fa-solid fa-circle-xmark"></i></div>
-      <h2 style="font-family:var(--font-display);font-size:1.5rem;margin-bottom:.5rem;">ØªÙ… Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø­Ø¬Ø²</h2>
+      <h2 style="font-family:var(--font-display);font-size:1.5rem;margin-bottom:.5rem;">تم إلغاء الحجز</h2>
       <p style="color:var(--text-muted);font-size:.95rem;margin-bottom:1.75rem;">
-        ØªÙ… Ø¥Ù„ØºØ§Ø¡ Ø­Ø¬Ø²Ùƒ Ø¨Ù†Ø¬Ø§Ø­. ÙŠÙ…ÙƒÙ†Ùƒ Ø­Ø¬Ø² Ù…ÙˆØ¹Ø¯ Ø¬Ø¯ÙŠØ¯ ÙÙŠ Ø£ÙŠ ÙˆÙ‚Øª.
+        تم إلغاء حجزك بنجاح. يمكنك حجز موعد جديد في أي وقت.
       </p>
       <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
         <a href="index.html" class="btn btn-primary">
-          <i class="fa-solid fa-calendar-plus"></i> Ø­Ø¬Ø² Ù…ÙˆØ¹Ø¯ Ø¬Ø¯ÙŠØ¯
+          <i class="fa-solid fa-calendar-plus"></i> حجز موعد جديد
         </a>
         <a href="index.html" class="btn btn-secondary">
-          <i class="fa-solid fa-house"></i> Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©
+          <i class="fa-solid fa-house"></i> الرئيسية
         </a>
       </div>
     </div>
@@ -227,7 +227,7 @@
   </div>
 
   <footer style="margin-top:3rem;padding:1.5rem 1.5rem;border-top:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;font-size:.85rem;color:var(--text-muted);max-width:1100px;margin-left:auto;margin-right:auto;">
-    <div>Â© 2026. Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ‚ Ù…Ø­ÙÙˆØ¸Ø©. Ø£Ø­Ù…Ø¯ Ù…Ø±Ø§Ø¯</div>
+    <div>© 2026. جميع الحقوق محفوظة. أحمد مراد</div>
     <img src="../logo_sm.png" alt="Logo" style="max-height:32px;width:auto;object-fit:contain;">
   </footer>
 
