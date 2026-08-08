@@ -183,11 +183,33 @@
   if (searchInput) searchInput.addEventListener('input', applyFilters);
   if (filterSel)   filterSel.addEventListener('change', applyFilters);
 
-  // Auto-load after auth is ready
-  const checkAuth = setInterval(() => {
-    if (window.db !== undefined || window.isFirebaseConfigured === false) {
-      clearInterval(checkAuth);
+  // Wait for Firebase Auth to confirm a logged-in user before loading inquiries
+  // This prevents Firestore "Missing or insufficient permissions" errors
+  // that occur when reading before the auth token is ready.
+  function initWhenReady() {
+    if (!window.isFirebaseConfigured) {
+      // Mock mode - load from localStorage directly
       window.loadInquiries();
+      return;
     }
-  }, 400);
+
+    if (window.auth && typeof window.auth.onAuthStateChanged === 'function') {
+      window.auth.onAuthStateChanged(user => {
+        if (user) {
+          window.loadInquiries();
+        }
+        // If no user (null), auth.js / requireAdmin() already redirects to login
+      });
+    } else {
+      // auth not loaded yet, poll briefly then try
+      const checkReady = setInterval(() => {
+        if (window.auth) {
+          clearInterval(checkReady);
+          initWhenReady();
+        }
+      }, 200);
+    }
+  }
+
+  initWhenReady();
 })();
